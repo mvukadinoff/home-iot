@@ -5,7 +5,7 @@ from flask import Flask, jsonify, request
 from multiprocessing import Process
 logging.basicConfig(level=logging.INFO)
 
-from ..daikinclima.dakinclima import Daikinclima
+from daikinclima.daikinclima import Daikinclima
 
 
 app = Flask(__name__)
@@ -26,7 +26,7 @@ def test():
     return jsonify({'Success': "Running"})
 
 @app.route('/homeiot/api/v1.0/daikinclima/temp', methods = ['GET'])
-def test():
+def daikinClimaGetTemp():
     daikin = Daikinclima()
     return daikin.getTemp()
 
