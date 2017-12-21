@@ -18,7 +18,6 @@ app = Flask(__name__)
 @app.route('/homeiot/api/v1.0/test', methods = ['GET'])
 def test():
     print(request.json)
-    print(request.json)
     # json_data = request.json
     # p = Process(target=jamcore.api_stack_create, args=(json_data)) # this passes a str instead of json request object
     # p.start()
@@ -35,8 +34,11 @@ def daikinClimaGetTemp():
 
 @app.route('/homeiot/api/v1.0/mirobo/status', methods = ['GET'])
 def miRoboStatus():
-
-    vac = miio.Vacuum(ip, token, start_id, debug)
+    #TODO: get config from ini
+    ip="192.168.1.11"
+    token="ffffffffffffffffffffffffffffffff"
+    start_id=0
+    vac = miio.Vacuum(ip, token, start_id, True)
     res = vac.status()
     jsonresult = {"State": res.state,"Battery": res.battery,"Fanspeed": res.fanspeed,
     "cleaning_since": res.clean_time,"Cleaned_area": res.clean_area,"DND_enabled": res.dnd  }
