@@ -1,4 +1,4 @@
-import ConfigParser
+import configparser
 import os
 import hashlib
 
@@ -6,7 +6,7 @@ import hashlib
 
 class Config:
     def __init__(self):
-        self.cfg = ConfigParser.ConfigParser()
+        self.cfg = configparser.ConfigParser()
 
         self.conf_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'conf.ini')
         conf_path="/usr/local/etc/"
