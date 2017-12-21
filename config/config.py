@@ -8,15 +8,15 @@ class Config:
     def __init__(self):
         self.cfg = configparser.ConfigParser()
 
-        self.conf_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'conf.ini')
-        conf_path="/usr/local/etc/"
+        self.conf_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'default_conf.ini')
+        conf_path="/usr/local/bin/home-iot/"
         if not os.path.exists(os.path.join(conf_path, 'conf.ini')):
             try:
                 if not os.path.exists(conf_path): ## create dir if it doesn't exist
                     os.makedirs(conf_path,0o777 ) ## this will fail on Windows which is fine. Exception should be ignored.
                 print("INFO: This is the first run of the application - initializing a persistant configuration file")
                 self.cfg.read(self.conf_path)
-                with open( os.path.join(conf_path, 'conf.ini') , "wb") as configfile:
+                with open( os.path.join(conf_path, 'conf.ini') , "w") as configfile:
                     self.cfg.write(configfile)
                 #Set the new config as the default path
                 self.conf_path = os.path.join(conf_path, 'conf.ini')

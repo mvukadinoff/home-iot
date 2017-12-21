@@ -63,7 +63,7 @@ def site_map():
 
 def main():
     conf = Config()
-    app.run(host=conf.configOpt["listen_address"], port=conf.configOpt["listen_port"], threaded=True, debug=True)
+    app.run(host=conf.configOpt["listen_address"], port=int(conf.configOpt["listen_port"]), threaded=True, debug=True)
 
 if __name__ == "__main__":
     main()
