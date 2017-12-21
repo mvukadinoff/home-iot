@@ -1,17 +1,15 @@
 import ConfigParser
 import os
 import hashlib
-import imp
-import sys
+
 
 
 class Config:
     def __init__(self):
         self.cfg = ConfigParser.ConfigParser()
 
-        self.conf_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), ']conf.ini')
-        # For android we need to ensure
-        conf_path="/data/"
+        self.conf_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'conf.ini')
+        conf_path="/usr/local/etc/"
         if not os.path.exists(os.path.join(conf_path, 'conf.ini')):
             try:
                 if not os.path.exists(conf_path): ## create dir if it doesn't exist
@@ -59,7 +57,7 @@ class Config:
             self.configOpt[item[0]] = item[1]
 
         try:
-            self.ext_script_path = self.configOpt["ext_script_path"]  # 1
+            self.listen_address = self.configOpt["listen_address"]  # 1
 
         except Exception as e:
             print("Error while loading variables from config" + str(e))
@@ -121,18 +119,18 @@ class Config:
 
     def resetToFactory(self):
         # remove everything in the main section
-        OpSys =  self.cfg.get(self.config_section,"os")
         try:
             self.cfg.remove_section(self.config_section)
             # add the section clean
             self.cfg.add_section(self.config_section)
+            self.cfg.set(self.config_section, "listen_address", "0.0.0.0")
+            self.cfg.set(self.config_section, "listen_port", "5000")
             self.cfg.set(self.config_section, "log_level", "info")
             self.cfg.set(self.config_section, "python_binary", "python" )
             self.cfg.set(self.config_section, "script_timeout", "18")
             self.cfg.set(self.config_section, "watchdog_interval", "2" )
             self.cfg.set(self.config_section, "lock_file", "temp_lock_file")
-            self.cfg.set(self.config_section, "ext_script_path", "/data/")
-            self.cfg.set(self.config_section, "lock_file_path", "/data/")
+            self.cfg.set(self.config_section, "lock_file_path", "/tmp/")
 
             print(self.get_sysconfig())
 

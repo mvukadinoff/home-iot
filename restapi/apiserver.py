@@ -10,6 +10,8 @@ import urllib
 from daikinclima.daikinclima import Daikinclima
 import miio
 
+from config.config import Config
+
 app = Flask(__name__)
 #app.config['CORS_HEADERS'] = 'Content-Type'
 #cors = CORS(app, resources={r"/*": {"origins": "*"}})
@@ -58,8 +60,10 @@ def site_map():
         links.append((rule.endpoint,line))
     return json.dumps(links)
 
+
 def main():
-    app.run(host='0.0.0.0', threaded=True, debug=True)
+    conf = Config()
+    app.run(host=conf.configOpt["listen_address"], port=conf.configOpt["listen_port"], threaded=True, debug=True)
 
 if __name__ == "__main__":
     main()
