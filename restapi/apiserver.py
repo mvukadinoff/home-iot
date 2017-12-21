@@ -7,6 +7,7 @@ logging.basicConfig(level=logging.INFO)
 
 from daikinclima.daikinclima import Daikinclima
 
+import miio
 
 app = Flask(__name__)
 #app.config['CORS_HEADERS'] = 'Content-Type'
@@ -31,6 +32,13 @@ def daikinClimaGetTemp():
     return daikin.getTemp()
 
 
+@app.route('/homeiot/api/v1.0/mirobo/status', methods = ['GET'])
+def miRoboStatus():
+    vac = miio.Vacuum(ip, token, start_id, debug)
+    res = vac.status()
+    jsonresult = {"State": res.state,"Battery": res.battery,"Fanspeed": res.fanspeed,
+    "cleaning_since": res.clean_time,"Cleaned_area": res.clean_area,"DND_enabled": res.dnd  }
+    return jsonresult
 
 
 def main():
