@@ -1,7 +1,7 @@
 Flask
 websocket-client==0.37.0
 requests==2.11.1
-ConfigParser
+configparser
 #paramiko
 #Flask-Sockets==0.2.1
 #Cython==0.24.1
