@@ -58,6 +58,7 @@ class Config:
 
         try:
             self.listen_address = self.configOpt["listen_address"]  # 1
+            self.log_level = self.configOpt["log_level"]
 
         except Exception as e:
             print("Error while loading variables from config" + str(e))
