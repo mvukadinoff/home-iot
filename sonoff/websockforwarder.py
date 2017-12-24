@@ -13,6 +13,11 @@ socket = Sockets(flaskapp)
 def home():
     return render_template('main.html')
 
+@flaskapp.route('/dispatch/device', methods = ['GET'])
+def sonoffDispatchDevice():
+    jsonresult = {"error":0,"reason":"ok","IP":"192.168.1.2","port":443}
+    return jsonresult
+
 
 @socket.route('/')
 def server_socket(ws):
