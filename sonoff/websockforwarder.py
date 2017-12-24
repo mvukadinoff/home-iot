@@ -7,6 +7,7 @@ from sonoff.websockclient import Websocketclient
 from config.config import Config
 import json
 import requests
+import threading
 
 flaskapp = Flask(__name__)
 socket = Sockets(flaskapp)
@@ -44,6 +45,8 @@ def sonoffDispatchDevicePost():
 def server_socket(ws):
     global webSockClientForwarder
     srv = WebSocketSrv(ws,webSockClientForwarder)
+    # set the new socket in the client forwarder to be able to send replys
+    webSockClientForwarder.wsToRelay = ws
     print("Service main : Incoming websocket connection")
     while not ws.closed:
         message = ws.receive()
@@ -64,7 +67,9 @@ def main():
     global webSockClientForwarder
     webSockClientForwarder = Websocketclient()
     print("Connecting to remote WS server to forward request")
-    webSockClientForwarder.connectToHost()
+    # webSockClientForwarder.connectToHost()
+    t = threading.Thread(target=webSockClientForwarder.connectToHost)
+    t.start()
 
     ws_port = int(main_config.configOpt["listen_port_websock"])
     listen_address = main_config.configOpt["listen_address"]

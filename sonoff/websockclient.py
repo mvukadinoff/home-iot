@@ -1,13 +1,23 @@
 import json
 import ssl
 from config.config import Config
-from websocket import create_connection
+from websocket import create_connection, enableTrace
+import websocket
 from pprint import pprint
-
+import threading
 
 class Websocketclient(object):
     def _init__(self):
         self.wsclnt = ""
+        self.wsToRelay = ""
+
+    def on_error(self, ws,error):
+        print(error)
+
+    def on_message(self, ws, message):
+        print("Got message from central server:" + str(message))
+        #TODO send the message back via the websocket server
+        self.wsToRelay.send(message)
 
     def connectToHost(self,host=None, port=None):
         main_config = Config()
@@ -18,10 +28,12 @@ class Websocketclient(object):
         # Connect to Zio Host
         addr = "wss://" + host + ":" + port + "/api/ws"
         print( "Will attempt to connect to " + addr )
+        websocket.enableTrace(True)
         try:
-            self.wsclnt = create_connection(addr, sslopt={"cert_reqs": ssl.CERT_NONE} )
-            print( "Connection should be established now:")
-            pprint(self.wsclnt)
+            #self.wsclnt = create_connection(addr, sslopt={"cert_reqs": ssl.CERT_NONE} )
+            self.wsclnt = websocket.WebSocketApp( addr,  on_error = self.on_error ,on_message = self.on_message )
+            self.wsclnt.run_forever( sslopt={"cert_reqs": ssl.CERT_NONE} )
+            print( "Connection should have been established, but now ended")
         except Exception as e:
             print("websocket client: connectToHost: Failed to connect " + str(e))
 
@@ -33,17 +45,26 @@ class Websocketclient(object):
         except Exception as e:
             print("_send_json_cmd : Error occurred while trying to send command, check if "
                            "connection was established " + str(e))
+            print("_send_json_cmd : will try to reconnect")
+            try:
+                t = threading.Thread(target=self.connectToHost)
+                t.start()
+            except Exception as e:
+                print("_send_json_cmd : Error occurred while trying to reconnect: " + str(e) )
+
         ## ToDO wait in thread for this: (recv)
         # wait for reply as per requirement
-        self.wsclnt.settimeout(float(10))
-        try:
-            result = self.wsclnt.recv()
-            print("CANT BELIVE IT. We got a result:"+str(result))
-        except Exception as e:
-            print(" _send_json_cmd : Error getting back result, it's possible that the "
-                           "timeout was reached " + str(e))
-            result = "ERROR"
-        return result
+        #self.wsclnt.settimeout(float(30))
+        #try:
+        #    print("will wait for reply")
+        #    result = "no answer"
+        #    #result = self.wsclnt.recv()
+        #except Exception as e:
+        #    print(" _send_json_cmd : Error getting back result, it's possible that the "
+        #                   "timeout was reached " + str(e))
+        #    result = "ERROR"
+        #return result
+        return 0
 
 
 

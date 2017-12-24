@@ -53,10 +53,11 @@ class WebSocketSrv(object):
         try:
             print("Will try to forward request to central server")
             result = self.wsclient.forwardRequest(message)
-            print("Sending back remote result to relay: " + str(result))
-            self.ws.send(result)
+            # Result is no longer the reply, the client will call a on_mesasge callback that will forward the reply
+            #print("Sending back remote result to relay: " + str(result))
+            #self.ws.send(result)
         except Exception as e:
-            print("Websocket on_message : There was an error connecting " + str(e) )
+            print("Websocket on_message : There was an error forwarding the req. " + str(e) )
 
 
         if msg_data["operation"] == "ACTION":
