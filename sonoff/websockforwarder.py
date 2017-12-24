@@ -3,12 +3,14 @@ from flask_sockets import Sockets
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
 from sonoff.websocketsrv import WebSocketSrv
+from sonoff.websockclient import Websocketclient
 from config.config import Config
 import json
 import requests
 
 flaskapp = Flask(__name__)
 socket = Sockets(flaskapp)
+global webSockClientForwarder
 
 @flaskapp.route('/')
 def home():
@@ -40,7 +42,8 @@ def sonoffDispatchDevicePost():
 
 @socket.route('/api/ws')
 def server_socket(ws):
-    srv = WebSocketSrv(ws)
+    global webSockClientForwarder
+    srv = WebSocketSrv(ws,webSockClientForwarder)
     print("Service main : Incoming websocket connection")
     while not ws.closed:
         message = ws.receive()
@@ -58,6 +61,10 @@ def sonoffDispatchDeviceForward(requestdata):
 
 def main():
     main_config = Config()
+    global webSockClientForwarder
+    webSockClientForwarder = Websocketclient()
+    print("Connecting to remote WS server to forward request")
+    webSockClientForwarder.connectToHost()
 
     ws_port = int(main_config.configOpt["listen_port_websock"])
     listen_address = main_config.configOpt["listen_address"]

@@ -16,7 +16,7 @@ class Websocketclient(object):
         if port is None:
             port = main_config.configOpt["sonoff_ws_port"]
         # Connect to Zio Host
-        addr = "wss://" + host + ":" + port
+        addr = "wss://" + host + ":" + port + "/api/ws"
         print( "Will attempt to connect to " + addr )
         try:
             self.wsclnt = create_connection(addr, sslopt={"cert_reqs": ssl.CERT_NONE} )
@@ -35,9 +35,10 @@ class Websocketclient(object):
                            "connection was established " + str(e))
         ## ToDO wait in thread for this: (recv)
         # wait for reply as per requirement
-        self.wsclnt.settimeout(float(30))
+        self.wsclnt.settimeout(float(10))
         try:
             result = self.wsclnt.recv()
+            print("CANT BELIVE IT. We got a result:"+str(result))
         except Exception as e:
             print(" _send_json_cmd : Error getting back result, it's possible that the "
                            "timeout was reached " + str(e))

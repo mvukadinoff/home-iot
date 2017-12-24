@@ -1,10 +1,16 @@
-from sonoff.websockcklient import Websocketclient
+from sonoff.websockclient import Websocketclient
 #from sonoff.websocketsrv import WebSocketSrv
 import json
+import threading
+import time
 
 wsclient = Websocketclient()
 print("Connecting to remote WS server to forward request")
-wsclient.connectToHost()
+
+t = threading.Thread(target=wsclient.connectToHost)
+t.start()
+
+time.sleep(2)
 
 register_msg= {'action': 'register',
  'apikey': '1538c624-1d13-4cab-a0d8-319fc388ba0c',
