@@ -15,7 +15,7 @@ class Websocketclient(object):
             port = main_config.configOpt["sonoff_ws_port"]
         # Connect to Zio Host
         addr = "wss://" + host + ":" + port
-        print "Will attempt to connect to " + addr
+        print( "Will attempt to connect to " + addr )
         #self.wsclnt = self.wsclnt.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
         self.wsclnt = create_connection(addr)
 
