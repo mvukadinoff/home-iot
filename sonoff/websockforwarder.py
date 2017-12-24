@@ -51,7 +51,7 @@ def server_socket(ws):
 def sonoffDispatchDeviceForward(requestdata):
     main_config = Config()
     url = "https://" + main_config.configOpt["sonoff_server"] + ":" + main_config.configOpt["sonoff_port"]
-    res = requests.post(url=url, data=requestdata)
+    res = requests.post(url=url, data=requestdata, verify=False)
     print("Sent to " + url + " data " + requestdata  + " got back:")
     print(res.text)
 
