@@ -16,11 +16,15 @@ class Websocketclient(object):
             port = main_config.configOpt["sonoff_ws_port"]
         # Connect to Zio Host
         addr = "wss://" + host + ":" + port
-        print( "Will attempt to connect to " + addr )
-        self.wsclnt = create_connection(addr, sslopt={"cert_reqs": ssl.CERT_NONE} )
+        if self.wsclnt is None:
+            print( "Will attempt to connect to " + addr )
+            self.wsclnt = create_connection(addr, sslopt={"cert_reqs": ssl.CERT_NONE} )
+        else:
+            print("Connection alredy established")
 
     def _send_json_cmd(self,str_json_cmd):
         try:
+            print("Trying to send " + str_json_cmd)
             self.wsclnt.send(str_json_cmd)
         except Exception as e:
             print("ZioLib _send_json_cmd : Error occurred while trying to send command, check if "
