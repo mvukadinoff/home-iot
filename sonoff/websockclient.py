@@ -2,6 +2,7 @@ import json
 import ssl
 from config.config import Config
 from websocket import create_connection
+from pprint import pprint
 
 
 class Websocketclient(object):
@@ -18,6 +19,9 @@ class Websocketclient(object):
         addr = "wss://" + host + ":" + port
         print( "Will attempt to connect to " + addr )
         self.wsclnt = create_connection(addr, sslopt={"cert_reqs": ssl.CERT_NONE} )
+        print( "Connection should be established now:")
+        pprint(self.wsclnt)
+
 
     def _send_json_cmd(self,str_json_cmd):
         try:
@@ -27,7 +31,6 @@ class Websocketclient(object):
             print("_send_json_cmd : Error occurred while trying to send command, check if "
                            "connection was established " + str(e))
         # wait for reply as per requirement
-        main_config = Config()
         self.wsclnt.settimeout(float(30))
         try:
             result = self.wsclnt.recv()
