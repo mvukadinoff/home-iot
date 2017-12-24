@@ -4,7 +4,7 @@ import imp
 import os
 import random
 from config.config import Config
-from sonoff.websockcklient import Websocketclient
+from sonoff.websockclient import Websocketclient
 from pprint import pprint
 import sys
 
