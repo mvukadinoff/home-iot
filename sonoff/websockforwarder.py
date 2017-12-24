@@ -26,7 +26,7 @@ def sonoffDispatchDevicePost():
     jsonresult = {"error":0,"reason":"ok","IP":"192.168.1.2","port":443}
     return json.dumps(jsonresult)
 
-@socket.route('/')
+@socket.route('/api/ws')
 def server_socket(ws):
     srv = WebSocketSrv(ws)
     print("Service main : Incoming websocket connection")
