@@ -1,4 +1,5 @@
 import json
+import ssl
 from config.config import Config
 from websocket import create_connection
 
@@ -16,8 +17,7 @@ class Websocketclient(object):
         # Connect to Zio Host
         addr = "wss://" + host + ":" + port
         print( "Will attempt to connect to " + addr )
-        #self.wsclnt = self.wsclnt.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
-        self.wsclnt = create_connection(addr)
+        self.wsclnt = create_connection(addr, sslopt={"cert_reqs": ssl.CERT_NONE} )
 
     def _send_json_cmd(self,str_json_cmd):
         try:
