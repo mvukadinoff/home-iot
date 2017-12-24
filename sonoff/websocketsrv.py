@@ -33,7 +33,7 @@ class WebSocketSrv(object):
             if self.main_config.log_level == "debug":
                 pprint(msg_data)
 
-        except Exception, e:
+        except Exception as e:
             print("Websocket on_message : There was an error parsing the json from the command " + str(e) +
                            '  sending back ' + 'Error in JSON format.')
             return
@@ -54,7 +54,7 @@ class WebSocketSrv(object):
                 try:
                     self.script_trigger(msg_data)
 
-                except Exception, e:
+                except Exception as e:
                     error_reply = self._buildReplyJson(msg_data, code=4002, msg='Error triggering script')
                     print("Websocket triggerscript : There was an error calling the action " + str(e) +
                                    ' sending back - ' + error_reply)
@@ -96,7 +96,7 @@ class WebSocketSrv(object):
                         self.ws.send(error_reply)
                         return
 
-                except Exception, e:
+                except Exception as e:
                     error_reply = self._buildReplyJson(msg_data, code=4010, msg="FAIL - Script download failed")
                     print("Websocket downloadscript : Error in downloadscript" + str(e) +
                                    ' sending back - ' + error_reply)
@@ -131,7 +131,7 @@ class WebSocketSrv(object):
             print("_buildReplyJson : Reply json - " + replyJson)
             return replyJson
 
-        except Exception, e:
+        except Exception as e:
             print("_buildReplyJson : Exception while building the json for reply " + str(e))
             return '{"protocolVersion":"3.0","responseType":"ACTION","rqRef":"102","deviceID":"1","accessKey":"NoKey",' \
                    '"accessLevel":0,"resultCode":4001,"resultMessage":"ERROR Building reply json"}'
