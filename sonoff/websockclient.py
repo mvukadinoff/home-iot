@@ -24,7 +24,7 @@ class Websocketclient(object):
             print("Trying to send " + str_json_cmd)
             self.wsclnt.send(str_json_cmd)
         except Exception as e:
-            print("ZioLib _send_json_cmd : Error occurred while trying to send command, check if "
+            print("_send_json_cmd : Error occurred while trying to send command, check if "
                            "connection was established " + str(e))
         # wait for reply as per requirement
         main_config = Config()
