@@ -5,6 +5,7 @@ from geventwebsocket.handler import WebSocketHandler
 from sonoff.websocketsrv import WebSocketSrv
 from config.config import Config
 import json
+import requests
 
 flaskapp = Flask(__name__)
 socket = Sockets(flaskapp)
@@ -24,6 +25,8 @@ def sonoffDispatchDevicePost():
     print("REST: Relay attempts to get websocket serever address from POST /dispatch/device")
     print("got the following params: "+json.dumps(request.get_json()))
     jsonresult = {"error":0,"reason":"ok","IP":"192.168.1.2","port":443}
+    ## Make the actual request to Sonoff
+    sonoffDispatchDeviceForward(json.dumps(request.get_json()))
     return json.dumps(jsonresult)
 
 #@flaskapp.route('/api/ws', methods = ['GET'])
@@ -40,6 +43,14 @@ def server_socket(ws):
         message = ws.receive()
         srv.on_message(message)
     del srv
+
+
+def sonoffDispatchDeviceForward(requestdata):
+    main_config = Config()
+    url = "https://" + main_config.configOpt["sonoff_server"] + ":" + main_config.configOpt["sonoff_port"]
+    request.post(url=url, data=requestdata)
+    print("Sent to " + url + " data " + requestdata)
+
 
 def main():
     main_config = Config()
