@@ -42,6 +42,7 @@ class WebSocketSrv(object):
 
         ## Try to reply with api-key:
         register_callback = {   "error" : 0, "deviceid" : "10000bae1f",   "apikey" : "111111111-1111-1111-1111-111111111111" }
+        print("Try to send back :" + json.dumps(register_callback))
         self.ws.send(json.dumps(register_callback))
 
         ## just forward request:
