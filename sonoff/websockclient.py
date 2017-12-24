@@ -44,7 +44,7 @@ class Websocketclient(object):
             print(" forwardRequest : Failed to parse json, please check the passed argument")
             return "ERROR"
         ## modify json if needed
-        msg_dict["accessKey"] = "test"
+        #msg_dict["accessKey"] = "test"
         try:
             jsoncmd = json.dumps(msg_dict)
         except:

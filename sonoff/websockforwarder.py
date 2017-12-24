@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_sockets import Sockets
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
@@ -9,6 +9,9 @@ from config.config import Config
 flaskapp = Flask(__name__)
 socket = Sockets(flaskapp)
 
+@flaskapp.route('/')
+def home():
+    return render_template('sonoff/main.html')
 
 
 @socket.route('/')
