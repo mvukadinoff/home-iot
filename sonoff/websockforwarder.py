@@ -22,7 +22,7 @@ def sonoffDispatchDeviceGet():
 @flaskapp.route('/dispatch/device', methods = ['POST'])
 def sonoffDispatchDevicePost():
     print("REST: Relay attempts to get websocket serever address from POST /dispatch/device")
-    print("got the following params: "+request.get_json())
+    print("got the following params: "+json.dumps(request.get_json()))
     jsonresult = {"error":0,"reason":"ok","IP":"192.168.1.2","port":443}
     return json.dumps(jsonresult)
 
