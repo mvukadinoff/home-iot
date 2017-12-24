@@ -15,6 +15,7 @@ def home():
 
 @flaskapp.route('/dispatch/device', methods = ['GET'])
 def sonoffDispatchDevice():
+    print("REST: Relay attempts to get websocket serever address from /dispatch/device")
     jsonresult = {"error":0,"reason":"ok","IP":"192.168.1.2","port":443}
     return json.dumps(jsonresult)
 
