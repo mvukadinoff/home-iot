@@ -29,7 +29,7 @@ def sonoffDispatchDevicePost():
     try:
         sonoffDispatchDeviceForward(json.dumps(request.get_json()))
     except Exception as e:
-        print("Failed to dispatch to central server, but that's ok:w")
+        print("Failed to dispatch to central server, but that's ok " + str(e))
     return json.dumps(jsonresult)
 
 #@flaskapp.route('/api/ws', methods = ['GET'])
@@ -51,8 +51,9 @@ def server_socket(ws):
 def sonoffDispatchDeviceForward(requestdata):
     main_config = Config()
     url = "https://" + main_config.configOpt["sonoff_server"] + ":" + main_config.configOpt["sonoff_port"]
-    requests.post(url=url, data=requestdata)
-    print("Sent to " + url + " data " + requestdata)
+    res = requests.post(url=url, data=requestdata)
+    print("Sent to " + url + " data " + requestdata  + " got back:")
+    print(res.text)
 
 
 def main():
