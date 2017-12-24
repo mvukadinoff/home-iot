@@ -4,7 +4,7 @@ from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
 from sonoff.websocketsrv import WebSocketSrv
 from config.config import Config
-
+import json
 
 flaskapp = Flask(__name__)
 socket = Sockets(flaskapp)
@@ -16,7 +16,7 @@ def home():
 @flaskapp.route('/dispatch/device', methods = ['GET'])
 def sonoffDispatchDevice():
     jsonresult = {"error":0,"reason":"ok","IP":"192.168.1.2","port":443}
-    return jsonresult
+    return json.dumps(jsonresult)
 
 
 @socket.route('/')
