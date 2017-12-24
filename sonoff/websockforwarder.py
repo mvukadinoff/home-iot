@@ -26,7 +26,10 @@ def sonoffDispatchDevicePost():
     print("got the following params: "+json.dumps(request.get_json()))
     jsonresult = {"error":0,"reason":"ok","IP":"192.168.1.2","port":443}
     ## Make the actual request to Sonoff
-    sonoffDispatchDeviceForward(json.dumps(request.get_json()))
+    try:
+        sonoffDispatchDeviceForward(json.dumps(request.get_json()))
+    except Exception as e:
+        print("Failed to dispatch to central server, but that's ok:w")
     return json.dumps(jsonresult)
 
 #@flaskapp.route('/api/ws', methods = ['GET'])
