@@ -15,8 +15,8 @@ class WebSocketSrv(object):
         self.access_key = ""
         self.device_id = ""
         self.wsclient = Websocketclient()
-        print("Connecting to remote WS server to forward request")
-        self.wsclient.connectToHost()
+        #print("Connecting to remote WS server to forward request")
+        #self.wsclient.connectToHost()
 
     def on_message(self, message):
         """
@@ -48,7 +48,7 @@ class WebSocketSrv(object):
         ## just forward request:
         try:
             print("Will try to forward request to central server")
-            self.wsclient.forwardRequest(msg_data)
+            self.wsclient.forwardRequest(message)
         except Exception as e:
             print("Websocket on_message : There was an error connecting " + str(e) )
 
