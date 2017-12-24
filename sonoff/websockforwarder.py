@@ -11,7 +11,7 @@ socket = Sockets(flaskapp)
 
 @flaskapp.route('/')
 def home():
-    return render_template('sonoff/main.html')
+    return render_template('main.html')
 
 
 @socket.route('/')
