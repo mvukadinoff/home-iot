@@ -26,6 +26,12 @@ def sonoffDispatchDevicePost():
     jsonresult = {"error":0,"reason":"ok","IP":"192.168.1.2","port":443}
     return json.dumps(jsonresult)
 
+@flaskapp.route('/api/ws', methods = ['GET'])
+def sonoffDispatchApiWSget():
+    print("REST: Relay attempts to register GET /api/ws")
+    jsonresult = {"error":0,"reason":"ok","IP":"192.168.1.2","port":443}
+    return json.dumps(jsonresult)
+
 @socket.route('/api/ws')
 def server_socket(ws):
     srv = WebSocketSrv(ws)
