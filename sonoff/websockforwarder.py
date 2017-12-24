@@ -14,13 +14,13 @@ def home():
     return render_template('sonoff/main.html')
 
 @flaskapp.route('/dispatch/device', methods = ['GET'])
-def sonoffDispatchDevice():
+def sonoffDispatchDeviceGet():
     print("REST: Relay attempts to get websocket serever address from GET /dispatch/device")
     jsonresult = {"error":0,"reason":"ok","IP":"192.168.1.2","port":443}
     return json.dumps(jsonresult)
 
 @flaskapp.route('/dispatch/device', methods = ['POST'])
-def sonoffDispatchDevice():
+def sonoffDispatchDevicePost():
     print("REST: Relay attempts to get websocket serever address from POST /dispatch/device")
     print("got the following params: "+request.get_json())
     jsonresult = {"error":0,"reason":"ok","IP":"192.168.1.2","port":443}
