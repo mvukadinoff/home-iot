@@ -21,7 +21,7 @@ class Websocketclient(object):
     def _send_json_cmd(self,str_json_cmd):
         try:
             self.wsclnt.send(str_json_cmd)
-        except Exception, e:
+        except Exception as e:
             print("ZioLib _send_json_cmd : Error occurred while trying to send command, check if "
                            "connection was established " + str(e))
         # wait for reply as per requirement
@@ -29,7 +29,7 @@ class Websocketclient(object):
         self.wsclnt.settimeout(float(30))
         try:
             result = self.wsclnt.recv()
-        except Exception, e:
+        except Exception as e:
             print(" _send_json_cmd : Error getting back result, it's possible that the "
                            "timeout was reached " + str(e))
             result = "ERROR"

@@ -43,7 +43,7 @@ class WebSocketSrv(object):
             print("Connecting to remote WS server")
             self.wsclient.connectToHost()
             self.wsclient.forwardRequest(msg_data)
-        except Exception, e:
+        except Exception as e:
             print("Websocket on_message : There was an error connecting " + str(e) )
 
 
