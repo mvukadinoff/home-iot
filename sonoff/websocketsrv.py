@@ -22,6 +22,14 @@ class WebSocketSrv(object):
         self.device_id = ""
         self.wsclient = ws_forwarder
 
+    def sendMsgToRelay(self, message):
+        print("websocksrv: sendMsgToRelay: Sending back remote result to relay: " + str(message))
+        self.ws.send(message)
+
+    def switch(self,state="on"):
+        jsoncmd = {"action":"update","deviceid":self.device_id,"apikey":self.access_key,"userAgent":"app","sequence":"1514400069310","ts":0,"params":{"switch":state},"from":"app"}
+        self.sendMsgToRelay(json.dumps(jsoncmd))
+
     def on_message(self, message):
         """
         :param message: the message send via websocket - string in json format
@@ -38,24 +46,22 @@ class WebSocketSrv(object):
             print("Websocket on_message : Message parsed")
             if self.main_config.log_level == "debug":
                 pprint(msg_data)
+            if "deviceid" in msg_data:
+                self.device_id = msg_data["deviceid"]
+            if "apikey" in msg_data:
+                self.access_key = msg_data["apikey"]
 
         except Exception as e:
             print("Websocket on_message : There was an error parsing the json from the command " + str(e) +
                            '  sending back ' + 'Error in JSON format.')
             return
 
-        ## Try to reply with api-key:
-        # register_callback = {"error":0, "deviceid":"10000bae1f","apikey":"1538c624-1d13-4cab-a0d8-319fc388ba0c" }
-        # print("Try to send back :" + json.dumps(register_callback))
-        # self.ws.send(json.dumps(register_callback))
-
         ## just forward request:
         try:
             print("Will try to forward request to central server")
             result = self.wsclient.forwardRequest(message)
-            # Result is no longer the reply, the client will call a on_mesasge callback that will forward the reply
-            #print("Sending back remote result to relay: " + str(result))
-            #self.ws.send(result)
+            print("Request forwarded to central server")
+            return
         except Exception as e:
             print("Websocket on_message : There was an error forwarding the req. " + str(e) )
 

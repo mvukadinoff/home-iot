@@ -33,24 +33,22 @@ def sonoffDispatchDevicePost():
         sonoffDispatchDeviceForward(json.dumps(request.get_json()))
     except Exception as e:
         print("Failed to dispatch to central server, but that's ok " + str(e))
+    print("REST: Returning to WiFi Relay:"+ json.dumps(jsonresult) ) 
     return json.dumps(jsonresult)
-
-#@flaskapp.route('/api/ws', methods = ['GET'])
-#def sonoffDispatchApiWSget():
-#    print("REST: Relay attempts to register GET /api/ws")
-#    jsonresult = {"error":0,"reason":"ok","IP":"192.168.1.2","port":443}
-#    return json.dumps(jsonresult)
 
 @socket.route('/api/ws')
 def server_socket(ws):
     global webSockClientForwarder
     srv = WebSocketSrv(ws,webSockClientForwarder)
     # set the new socket in the client forwarder to be able to send replys
-    webSockClientForwarder.wsToRelay = ws
     print("Service main : Incoming websocket connection")
     while not ws.closed:
         message = ws.receive()
+        webSockClientForwarder.wsToRelay = srv
+        print("Set the ws srv object to :" + str(webSockClientForwarder.wsToRelay) )
         srv.on_message(message)
+        print("Completed on_message now ws srv object is :" + str(webSockClientForwarder.wsToRelay) )
+    print("SOCKET CONN CLOSED removing srv object")
     del srv
 
 

@@ -16,8 +16,8 @@ class Websocketclient(object):
 
     def on_message(self, ws, message):
         print("Got message from central server:" + str(message))
-        #TODO send the message back via the websocket server
-        self.wsToRelay.send(message)
+        print("Will now forward to WiFi relay")
+        self.wsToRelay.sendMsgToRelay(message)
 
     def connectToHost(self,host=None, port=None):
         main_config = Config()

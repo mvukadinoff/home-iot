@@ -7,6 +7,9 @@ logging.basicConfig(level=logging.INFO)
 import json
 import urllib
 
+# import module to get access to global var webSockClientForwarder
+import sonoff.websockforwarder
+
 from daikinclima.daikinclima import Daikinclima
 import miio
 
@@ -31,20 +34,32 @@ def test():
 @app.route('/homeiot/api/v1.0/daikinclima/temp', methods = ['GET'])
 def daikinClimaGetTemp():
     daikin = Daikinclima()
-    return daikin.getTemp()
+    return jsonify(daikin.getTemp())
 
 
 @app.route('/homeiot/api/v1.0/mirobo/status', methods = ['GET'])
 def miRoboStatus():
-    #TODO: get config from ini
-    ip="192.168.1.11"
-    token="ffffffffffffffffffffffffffffffff"
+    conf = Config()
+    ip=conf.configOpt["mivac_ip"]
+    token=conf.configOpt["mivac_token"]
     start_id=0
     vac = miio.Vacuum(ip, token, start_id, True)
     res = vac.status()
-    jsonresult = {"State": res.state,"Battery": res.battery,"Fanspeed": res.fanspeed,
-    "cleaning_since": res.clean_time,"Cleaned_area": res.clean_area,"DND_enabled": res.dnd  }
-    return jsonresult
+    jsonresult = {"State": res.state,"Battery": res.battery,"Fanspeed": res.fanspeed,"cleaning_since": str(res.clean_time),"Cleaned_area": res.clean_area  }
+    return jsonify(jsonresult)
+
+@app.route('/homeiot/api/v1.0/sonoff/switch', methods = ['POST'])
+def sonoffSwitch():
+    try:
+       state=request.args.get('state')
+       if state is not "on" or state is not "off":
+          print("Sonoff: ERROR state param not on or off, assuming off , suplied:"+ state )
+          state="off"
+    except:
+       print("Sonoff: ERROR state param not supplied, assuming off")
+       state="off"
+    sonoff.websockforwarder.webSockClientForwarder.wsToRelay.switch(state)
+    return '{ "status" : "Switched boiler ' + state + '" }'
 
 @app.route("/homeiot/")
 def site_map():
