@@ -9,9 +9,10 @@ import json
 import requests
 import threading
 
+import sonoff.wsclientglb
+
 flaskapp = Flask(__name__)
 socket = Sockets(flaskapp)
-global webSockClientForwarder
 
 @flaskapp.route('/')
 def home():
@@ -38,16 +39,15 @@ def sonoffDispatchDevicePost():
 
 @socket.route('/api/ws')
 def server_socket(ws):
-    global webSockClientForwarder
-    srv = WebSocketSrv(ws,webSockClientForwarder)
+    srv = WebSocketSrv(ws,sonoff.wsclientglb.webSockClientForwarder)
     # set the new socket in the client forwarder to be able to send replys
     print("Service main : Incoming websocket connection")
     while not ws.closed:
         message = ws.receive()
-        webSockClientForwarder.wsToRelay = srv
-        print("Set the ws srv object to :" + str(webSockClientForwarder.wsToRelay) )
+        sonoff.wsclientglb.webSockClientForwarder.wsToRelay = srv
+        print("Set the ws srv object to :" + str(sonoff.wsclientglb.webSockClientForwarder.wsToRelay) )
         srv.on_message(message)
-        print("Completed on_message now ws srv object is :" + str(webSockClientForwarder.wsToRelay) )
+        print("Completed on_message now ws srv object is :" + str(sonoff.wsclientglb.webSockClientForwarder.wsToRelay) )
     print("SOCKET CONN CLOSED removing srv object")
     del srv
 
@@ -62,20 +62,18 @@ def sonoffDispatchDeviceForward(requestdata):
 
 def main():
     main_config = Config()
-    global webSockClientForwarder
-    webSockClientForwarder = Websocketclient()
     print("Connecting to remote WS server to forward request")
     # webSockClientForwarder.connectToHost()
-    t = threading.Thread(target=webSockClientForwarder.connectToHost)
+    t = threading.Thread(target=sonoff.wsclientglb.webSockClientForwarder.connectToHost)
     t.start()
 
     ws_port = int(main_config.configOpt["listen_port_websock"])
     listen_address = main_config.configOpt["listen_address"]
-    print('Service main : Starting websocket listener...')
+    print('INFO: WSforwarder main : Starting websocket listener...')
     server = pywsgi.WSGIServer((listen_address, ws_port), flaskapp, handler_class=WebSocketHandler)
     server.serve_forever()
 
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+#    main()
 
 

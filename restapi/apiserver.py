@@ -6,19 +6,16 @@ from multiprocessing import Process
 logging.basicConfig(level=logging.INFO)
 import json
 import urllib
-
-# import module to get access to global var webSockClientForwarder
-import sonoff.websockforwarder
-
 from daikinclima.daikinclima import Daikinclima
 import miio
+# to gain access to global var object webSockClientForwarder and the communnicator to relay object: webSockClientForwarder.wsToRelay
+import sonoff.wsclientglb
 
 from config.config import Config
 
 app = Flask(__name__)
 #app.config['CORS_HEADERS'] = 'Content-Type'
 #cors = CORS(app, resources={r"/*": {"origins": "*"}})
-
 
 @app.route('/homeiot/api/v1.0/test', methods = ['GET'])
 def test():
@@ -58,7 +55,7 @@ def sonoffSwitch():
     except:
        print("Sonoff: ERROR state param not supplied, assuming off")
        state="off"
-    sonoff.websockforwarder.webSockClientForwarder.wsToRelay.switch(state)
+    sonoff.wsclientglb.webSockClientForwarder.wsToRelay.switch(state)
     return '{ "status" : "Switched boiler ' + state + '" }'
 
 @app.route("/homeiot/")
@@ -78,7 +75,7 @@ def site_map():
 
 def main():
     conf = Config()
-    app.run(host=conf.configOpt["listen_address"], port=int(conf.configOpt["listen_port"]), threaded=True, debug=True)
+    app.run(host=conf.configOpt["listen_address"], port=int(conf.configOpt["listen_port"]), threaded=True, debug=True, use_reloader=False)
 
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#    main()

@@ -1,10 +1,12 @@
+#!/usr/bin/python3
 import restapi.apiserver
+import sonoff.wsclientglb
 import sonoff.websockforwarder
 import threading
 
-global webSockClientForwarder
+sonoff.wsclientglb.init()
 sonoffThread = threading.Thread(target=sonoff.websockforwarder.main)
-print("Starting Sonoff websocket forwarder thread")
+print("MAIN: Starting Sonoff websocket forwarder thread")
 sonoffThread.start()
-print("Starting API server")
+print("MAIN: Starting API server")
 restapi.apiserver.main()

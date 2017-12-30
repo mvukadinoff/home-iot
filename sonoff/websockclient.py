@@ -12,6 +12,7 @@ class Websocketclient(object):
         self.wsToRelay = ""
 
     def on_error(self, ws,error):
+        print("ERROR: websocketclient: There was an error coomunicating to central server")
         print(error)
 
     def on_message(self, ws, message):
@@ -28,14 +29,14 @@ class Websocketclient(object):
         # Connect to Zio Host
         addr = "wss://" + host + ":" + port + "/api/ws"
         print( "Will attempt to connect to " + addr )
-        websocket.enableTrace(True)
+        websocket.enableTrace(False)
         try:
             #self.wsclnt = create_connection(addr, sslopt={"cert_reqs": ssl.CERT_NONE} )
             self.wsclnt = websocket.WebSocketApp( addr,  on_error = self.on_error ,on_message = self.on_message )
             self.wsclnt.run_forever( sslopt={"cert_reqs": ssl.CERT_NONE} )
             print( "Connection should have been established, but now ended")
         except Exception as e:
-            print("websocket client: connectToHost: Failed to connect " + str(e))
+            print("ERROR: websocket client: connectToHost: Failed to connect " + str(e))
 
 
     def _send_json_cmd(self,str_json_cmd):
