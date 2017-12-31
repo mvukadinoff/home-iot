@@ -59,23 +59,46 @@ class WebSocketSrv(object):
         try:
             print("Will try to forward request to central server")
             result = self.wsclient.forwardRequest(message)
-            print("Request forwarded to central server")
+            if result == "SENDFAIL" : 
+                print("TODO: Will try to handle request locally" + str(e) )
+                self.handleLocally(msg_data)
+            elif result == "SUCC":
+                print("Request forwarded to central server")
+            else:
+                print("The return from forward request was:"+str(result))
             return
         except Exception as e:
             print("Websocket on_message : There was an error forwarding the req. " + str(e) )
 
-
+    def handleLocally(self, msg):
+        if "action" in msg_data:
+            print("TODO: Will try to handle request locally" )
+            if msg["action"] == "update":
+                 #TODO: store data in main on_message function
+                 print("INFO: Websocketsrv.handleLocally: This is just a satus update message, sending ack")
+                 confirmMsg = {"error":0,"deviceid": self.device_id ,"apikey":self.access_key }
+                 self.sendMsgToRelay( json.dumps( confirmMsg ) )
+            if msg["action"] == "register":
+                 confirmMsg = {"error":0,"deviceid": self.device_id ,"apikey": self.access_key ,"config":{"devConfig":{"storeAppsecret":"","bucketName":"","lengthOfVideo":0,"deleteAfterDays":0,"persistentPipeline":"","storeAppid":"","uploadLimit":0,"statusReportUrl":"","storetype":0,"callbackHost":"","persistentNotifyUrl":"","callbackUrl":"","persistentOps":"","captureNumber":0,"callbackBody":""},"hb":1,"hbInterval":145}}
+                 print("INFO: Websocketsrv.handleLocally: will send fake reply from central server to register command")
+                 self.sendMsgToRelay( json.dumps( confirmMsg ) )
+            if msg["action"] == "date":
+                 ## TODO: Get actual date in correct format with python
+                 confirmMsg =  {"error":0,"deviceid": self.device_id ,"apikey":self.access_key,"date":"2017-12-30T18:27:46.139Z"}
 
     def _buildReplyJson(self, msg_data, code, msg):
         replyJsonDict = dict()
         try:
             if msg_data is not None:
-                # replyJsonDict["matchto"] = msg_data["matchfrom"]
                 replyJsonDict = dict.copy(msg_data)
+                #replyJsonDict["matchto"] = msg_data["matchfrom"]
+                replyJsonDict["deviceid"] = self.device_id
+                replyJsonDict["apikey"] = self.access_key
 
             else:
                 # default values:
-                replyJsonDict["matchto"] = "matchtovalue"
+                replyJsonDict["deviceid"] = self.device_id
+                replyJsonDict["apikey"] = self.access_key
 
             replyJson = json.dumps(replyJsonDict)
             print("_buildReplyJson : Reply json - " + replyJson)

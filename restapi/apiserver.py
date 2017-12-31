@@ -48,14 +48,15 @@ def miRoboStatus():
 @app.route('/homeiot/api/v1.0/sonoff/switch', methods = ['POST'])
 def sonoffSwitch():
     try:
-       state=request.args.get('state')
-       if state is not "on" or state is not "off":
+       #state=request.args.get('state')
+       state=request.form['state']
+       if state not in  [ "on" , "off" ]:
           print("Sonoff: ERROR state param not on or off, assuming off , suplied:"+ state )
           state="off"
     except:
        print("Sonoff: ERROR state param not supplied, assuming off")
        state="off"
-    sonoff.wsclientglb.webSockClientForwarder.wsToRelay.switch(state)
+    sonoff.wsclientglb.webSockClientForwarder.switchRelay(state)
     return '{ "status" : "Switched boiler ' + state + '" }'
 
 @app.route("/homeiot/")

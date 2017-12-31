@@ -38,11 +38,14 @@ class Websocketclient(object):
         except Exception as e:
             print("ERROR: websocket client: connectToHost: Failed to connect " + str(e))
 
+    def switchRelay(self,state):
+        self.wsToRelay.switch(state)
 
     def _send_json_cmd(self,str_json_cmd):
         try:
             print("Trying to send " + str_json_cmd)
             self.wsclnt.send(str_json_cmd)
+            return "SUCC"
         except Exception as e:
             print("_send_json_cmd : Error occurred while trying to send command, check if "
                            "connection was established " + str(e))
@@ -52,6 +55,8 @@ class Websocketclient(object):
                 t.start()
             except Exception as e:
                 print("_send_json_cmd : Error occurred while trying to reconnect: " + str(e) )
+                return "SENDFAIL"
+
 
         ## ToDO wait in thread for this: (recv)
         # wait for reply as per requirement
@@ -65,7 +70,7 @@ class Websocketclient(object):
         #                   "timeout was reached " + str(e))
         #    result = "ERROR"
         #return result
-        return 0
+        return "SUCC"
 
 
 
