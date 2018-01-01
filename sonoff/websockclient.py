@@ -13,6 +13,7 @@ class Websocketclient(object):
 
     def on_error(self, ws,error):
         print("ERROR: websocketclient: There was an error coomunicating to central server")
+        ##TODO: handler for local access, set flag or something
         print(error)
 
     def on_message(self, ws, message):
@@ -35,11 +36,15 @@ class Websocketclient(object):
             self.wsclnt = websocket.WebSocketApp( addr,  on_error = self.on_error ,on_message = self.on_message )
             self.wsclnt.run_forever( sslopt={"cert_reqs": ssl.CERT_NONE} )
             print( "Connection should have been established, but now ended")
+            ##TODO: handler for local access, set flag or something
         except Exception as e:
             print("ERROR: websocket client: connectToHost: Failed to connect " + str(e))
 
     def switchRelay(self,state):
         self.wsToRelay.switch(state)
+
+    def getRelayState(self):
+        return self.wsToRelay.getRelayState()
 
     def _send_json_cmd(self,str_json_cmd):
         try:

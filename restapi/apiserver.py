@@ -59,6 +59,12 @@ def sonoffSwitch():
     sonoff.wsclientglb.webSockClientForwarder.switchRelay(state)
     return '{ "status" : "Switched boiler ' + state + '" }'
 
+@app.route('/homeiot/api/v1.0/sonoff/status', methods = ['GET'])
+def sonoffStatus():
+    jsonresult=sonoff.wsclientglb.webSockClientForwarder.getRelayState()
+    return jsonify(jsonresult)
+    
+
 @app.route("/homeiot/")
 def site_map():
     links = []

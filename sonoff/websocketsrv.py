@@ -41,6 +41,7 @@ class WebSocketSrv(object):
             return
 
         try:
+            ## get useful data
             msg_data = json.loads(message)
             print("Websocket on_message : Message parsed")
             if self.main_config.log_level == "debug":
@@ -49,12 +50,16 @@ class WebSocketSrv(object):
                 self.device_id = msg_data["deviceid"]
             if "apikey" in msg_data:
                 self.access_key = msg_data["apikey"]
+            if "action" in msg_data:
+                if msg_data["action"] == "update":
+                   self.switch_status = msg_data["params"]["switch"]
+                   self.power = msg_data["params"]["power"]
 
         except Exception as e:
             print("Websocket on_message : There was an error parsing the json from the command " + str(e) +
                            '  sending back ' + 'Error in JSON format.')
             return
-
+  
         ## just forward request:
         try:
             print("Will try to forward request to central server")
@@ -71,7 +76,7 @@ class WebSocketSrv(object):
             print("Websocket on_message : There was an error forwarding the req. " + str(e) )
 
     def handleLocally(self, msg):
-        if "action" in msg_data:
+        if "action" in msg:
             print("TODO: Will try to handle request locally" )
             if msg["action"] == "update":
                  #TODO: store data in main on_message function
@@ -85,6 +90,10 @@ class WebSocketSrv(object):
             if msg["action"] == "date":
                  ## TODO: Get actual date in correct format with python
                  confirmMsg =  {"error":0,"deviceid": self.device_id ,"apikey":self.access_key,"date":"2017-12-30T18:27:46.139Z"}
+
+
+    def getRelayState(self):
+        return { "power": self.power , "switch": self.switch_status }
 
     def _buildReplyJson(self, msg_data, code, msg):
         replyJsonDict = dict()
