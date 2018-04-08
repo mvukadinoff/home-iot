@@ -10,6 +10,7 @@ class Websocketclient(object):
     def _init__(self):
         self.wsclnt = ""
         self.wsToRelay = ""
+        self.connected=False
 
     def on_error(self, ws,error):
         print("ERROR: websocketclient: There was an error coomunicating to central server")
@@ -29,16 +30,19 @@ class Websocketclient(object):
             port = main_config.configOpt["sonoff_ws_port"]
         # Connect to Zio Host
         addr = "wss://" + host + ":" + port + "/api/ws"
-        print( "Will attempt to connect to " + addr )
+        print( "Connecting to " + addr )
         websocket.enableTrace(False)
         try:
             #self.wsclnt = create_connection(addr, sslopt={"cert_reqs": ssl.CERT_NONE} )
             self.wsclnt = websocket.WebSocketApp( addr,  on_error = self.on_error ,on_message = self.on_message )
+            self.connected=True
             self.wsclnt.run_forever( sslopt={"cert_reqs": ssl.CERT_NONE} )
             print( "Connection should have been established, but now ended")
+            self.connected=False
             ##TODO: handler for local access, set flag or something
         except Exception as e:
             print("ERROR: websocket client: connectToHost: Failed to connect " + str(e))
+            self.connected=False
 
     def switchRelay(self,state):
         self.wsToRelay.switch(state)
