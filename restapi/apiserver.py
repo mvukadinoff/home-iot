@@ -10,8 +10,8 @@ from daikinclima.daikinclima import Daikinclima
 import miio
 # to gain access to global var object webSockClientForwarder and the communnicator to relay object: webSockClientForwarder.wsToRelay
 import sonoff.wsclientglb
-
 from config.config import Config
+from shutters.controller import ShuttersController
 
 app = Flask(__name__)
 #app.config['CORS_HEADERS'] = 'Content-Type'
@@ -89,6 +89,20 @@ def sonoffStatus():
     jsonresult=sonoff.wsclientglb.webSockClientForwarder.getRelayState()
     return jsonify(jsonresult)
     
+@app.route('/homeiot/api/v1.0/shutters/command', methods = ['POST'])
+def shuttersCommand():
+    try:
+       command=request.form['command']
+       conf = Config()
+       broker=conf.configOpt["mqtt_broker"]
+       shutters=ShuttersController(broker)
+       response=shutters.ShuttersCommand(command)
+    except Exception as e:
+       print("RestAPIShutters: ERROR command param not supplied, please specify either OPEN,CLOSE,SEMIOPEN,UP,DOWN or error connecting " + str(e))
+       response= str(e)
+
+    return jsonify(response)
+
 
 @app.route("/homeiot/")
 def site_map():
