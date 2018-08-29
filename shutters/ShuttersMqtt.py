@@ -37,7 +37,15 @@ class ShuttersMqtt(object):
             time.sleep(4)
 
 if __name__ == "__main__":
-    shutterListener=ShuttersMqtt("192.168.1.2")
+    bNotConnected=True
+    while bNotConnected:
+        try:
+            shutterListener=ShuttersMqtt("192.168.1.2")
+            bNotConnected=False
+        except Exception as e:
+            print("Failed to connecto to broker "  + str(e) )
+            print("Will try to reconnect")
+            time.sleep(15)
     shutterListener.listen()
 
 
