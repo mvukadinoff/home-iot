@@ -21,11 +21,14 @@ test_forward_speeds = list(range(0, MAX_SPEED, 2))
 
 test_forward_decel = list(range(MAX_SPEED,0,2))
 
-test_reverse_speeds = list(range(0, -MAX_SPEED, -1)) + \
-  [-MAX_SPEED] * 200 + list(range(-MAX_SPEED, 0, 1)) + [0]  
+test_reverse_speeds = list(range(0, -MAX_SPEED, -1))
+
+# reverse with grad. stop
+#test_reverse_speeds = list(range(0, -MAX_SPEED, -1)) + \
+#  [-MAX_SPEED] * 200 + list(range(-MAX_SPEED, 0, 1)) + [0]  
 
 #pinShutter2closedSensor = connector.gpio3p37
-pinShutter2closedSensor = port.PA10
+pinShutter2closedSensor = port.PG6
 
 """Init gpio module"""
 gpio.init()
@@ -41,29 +44,29 @@ gpio.pullup(pinShutter2closedSensor , gpio.PULLUP)
 try:
     motors.setSpeeds(0, 0)
 
-    print("Motor 2 forward")
+    print("Motor 1 forward")
     if not gpio.input(pinShutter2closedSensor) :
         print("Already at lowest position")
         motors.setSpeeds(0, 0)
         exit(0)
     for s in test_forward_speeds:
     #for s in test_reverse_speeds:
-        motors.motor2.setSpeed(s)
+        motors.motor1.setSpeed(s)
         time.sleep(0.005)
     loopprotect = 0
-    limit = 900
+    limit = 800
     print("Right Before sensor loop:" + str(gpio.input(pinShutter2closedSensor)))
     while gpio.input(pinShutter2closedSensor) and loopprotect < limit :
         #print(gpio.input(pinShutter2closedSensor))
         time.sleep(0.2)
         loopprotect += 1
-    print("Stopping motor - stop condition met - sensor or limit " + str(loopprotect))
-    motors.motor2.setSpeed(0)
+    print("Stopping motor - stop condition met - sensor or limit"  + str(loopprotect))
+    motors.motor1.setSpeed(0)
     print("Set speed to 0 after 1 sec in case motor didn't stop:" + str(gpio.input(pinShutter2closedSensor)))
     time.sleep(1)  ## stop again in case this fails occationally
     motors.setSpeeds(0, 0)
     if loopprotect < limit:
-       print("Motor was stopped from sensor "+str(loopprotect))
+       print("Motor was stopped from sensor")
     else:
        print("WARNING: Limit was reached, check sensor")
 
