@@ -24,10 +24,13 @@ class ShuttersMqtt(object):
         cmd = str(message.payload.decode("utf-8"))
         if cmd == "OPEN":
             call(['python','/root/shutters-pyh3.py'])
+            call(['python','/root/shutters-mot1-pyh3-copy-goup.py'])
         elif cmd == "CLOSE":
             call(['python','/root/shutters-pyh3-copy-godown.py'])
+            call(['python','/root/shutters-mot1-pyh3-copy-godown.py'])
         elif cmd == "SEMIOPEN":
             call(['python','/root/shutters-pyh3-copy-halfopen.py'])
+            call(['python','/root/shutters-mot1-halfopen.py'])
   
     def listen(self):
         #self.client.loop_start()
