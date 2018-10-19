@@ -75,6 +75,8 @@ class ShuttersMotorControl(object):
         motors.setSpeeds(0, 0)
 
 
+    def motor1action(self,listSpeed,intLoopProtectLimit,stopSensorPin):
+        print("Motor 1 start")
 
 try:
     motors.setSpeeds(0, 0)
