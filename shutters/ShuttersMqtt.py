@@ -1,5 +1,6 @@
 import paho.mqtt.client as mqtt
 import time
+import logging
 
 ## temporary while I write the controller class
 from subprocess import call
@@ -9,6 +10,9 @@ class ShuttersMqtt(object):
 
     def __init__(self, broker_address, broker_port=1883):
         self.client = mqtt.Client() #create new instance
+        logging.basicConfig(level=logging.DEBUG)
+        logger = logging.getLogger(__name__)
+        self.client.enable_logger(logger)
         self.client.connect(broker_address,broker_port,60) #connect to broker
         print("Connected to " + broker_address + ":"+ str(broker_port))
         time.sleep(1)
