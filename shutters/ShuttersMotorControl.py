@@ -1,8 +1,8 @@
+from __future__ import print_function
 import paho.mqtt.client as mqtt
 import time
 import logging
 
-from __future__ import print_function
 from pololu_drv8835_rpi import motors, MAX_SPEED
 import time
 import OPi.GPIO as GPIO
@@ -23,7 +23,7 @@ from pyA20.gpio import port
 class ShuttersMotorControl(object):
 
 
-    def __init__(self, broker_address, broker_port=1883):
+    def __init__(self, broker_address="localhost", broker_port=1883):
         self.client = mqtt.Client() #create new instance
         logging.basicConfig(level=logging.DEBUG)
         logger = logging.getLogger(__name__)
@@ -37,11 +37,7 @@ class ShuttersMotorControl(object):
 
         # Set up sequences of motor speeds.
         self.forward_speeds = list(range(0, MAX_SPEED, 2))
-
-        self.forward_decel = list(range(MAX_SPEED, 0, 2))
-
-        self.reverse_speeds = list(range(0, -MAX_SPEED, -1)) + \
-                              [-MAX_SPEED] * 200 + list(range(-MAX_SPEED, 0, 1)) + [0]
+        self.reverse_speeds = list(range(0, -MAX_SPEED, -2))
 
         # pinShutter2closedSensor = connector.gpio3p37
         self.pinShutter2openSensor = port.PA10
@@ -67,53 +63,75 @@ class ShuttersMotorControl(object):
 
     def open(self):
         print("Opening shutters")
+        print("Motor 1 opening")
+        self.motorAction(motors.motor1,self.reverse_speeds,800,self.pinShutter1openSensor)
+        print("Motor 2 opening")
+        self.motorAction(motors.motor2,self.forward_speeds,900,self.pinShutter2openSensor)
 
 
+    def close(self):
+        print("Closing shutters")
+        print("Motor 1 closing")
+        self.motorAction(motors.motor1,self.forward_speeds,800,self.pinShutter1closedSensor)
+        print("Motor 2 closing")
+        self.motorAction(motors.motor2,self.reverse_speeds,900,self.pinShutter2closedSensor)
 
+    def halfopen(self):
+        print("Ensure both shutters are closed")
+        print("Motor 1 closing")
+        self.motorAction(motors.motor1,self.forward_speeds,800,self.pinShutter1closedSensor)
+        print("Motor 2 closing")
+        self.motorAction(motors.motor2,self.reverse_speeds,900,self.pinShutter2closedSensor)
+        print("Shutter 1 opening with the step to let light trough")
+        self.motorAction(motors.motor1,self.reverse_speeds,20,self.pinShutter1openSensor)
+        print("Shutter 2 opening with the step to let light trough")
+        self.motorAction(motors.motor2,self.forward_speeds,26,self.pinShutter2openSensor)
 
     def stopAllMotors(self):
         motors.setSpeeds(0, 0)
 
 
-    def motor1action(self,listSpeed,intLoopProtectLimit,stopSensorPin):
-        print("Motor 1 start")
+    def motorAction(self,motor,listSpeed,intLoopProtectLimit,stopSensorPin):
+        print("Motor start")
 
-try:
-    motors.setSpeeds(0, 0)
+        try:
+            motors.setSpeeds(0, 0)
+        
+            if not gpio.input(stopSensorPin) :
+                print("Already at stop sensor")
+                motors.setSpeeds(0, 0)
+                return
+            for s in listSpeed:
+            #for s in test_reverse_speeds:
+                motor.setSpeed(s)
+                time.sleep(0.005)
+            loopprotect = 0
+            print("Right Before sensor loop:" + str(gpio.input(stopSensorPin)))
+            while gpio.input(stopSensorPin) and loopprotect < intLoopProtectLimit :
+                #print(gpio.input(pinShutter2closedSensor))
+                time.sleep(0.2)
+                loopprotect += 1
+            print("Stopping motor - stop condition met - sensor or limit " + str(loopprotect))
+            motor.setSpeed(0)
+            print("Set speed to 0 after 1 sec in case motor didn't stop:" + str(gpio.input(stopSensorPin)))
+            time.sleep(1)  ## stop again in case this fails occationally
+            motors.setSpeeds(0, 0)
+            if loopprotect < intLoopProtectLimit:
+                print("Motor was stopped from sensor , counter is at "+str(loopprotect))
+            else:
+                print("Motor was stopped by the set limit:"+str(loopprotect) )
+        
+        finally:
+          # Stop the motors, even if there is an exception
+          # or the user presses Ctrl+C to kill the process.
+          motors.setSpeeds(0, 0)
 
-    print("Motor 2 forward")
-    if not gpio.input(pinShutter2closedSensor) :
-        print("Already at lowest position")
-        motors.setSpeeds(0, 0)
-        exit(0)
-    for s in test_forward_speeds:
-    #for s in test_reverse_speeds:
-        motors.motor2.setSpeed(s)
-        time.sleep(0.005)
-    loopprotect = 0
-    limit = 900
-    print("Right Before sensor loop:" + str(gpio.input(pinShutter2closedSensor)))
-    while gpio.input(pinShutter2closedSensor) and loopprotect < limit :
-        #print(gpio.input(pinShutter2closedSensor))
-        time.sleep(0.2)
-        loopprotect += 1
-    print("Stopping motor - stop condition met - sensor or limit " + str(loopprotect))
-    motors.motor2.setSpeed(0)
-    print("Set speed to 0 after 1 sec in case motor didn't stop:" + str(gpio.input(pinShutter2closedSensor)))
-    time.sleep(1)  ## stop again in case this fails occationally
-    motors.setSpeeds(0, 0)
-    if loopprotect < limit:
-       print("Motor was stopped from sensor "+str(loopprotect))
-    else:
-       print("WARNING: Limit was reached, check sensor")
 
-#    print("Motor 2 reverse")
-#    for s in test_reverse_speeds:
-#        motors.motor2.setSpeed(s)
-#        time.sleep(0.005)
 
-finally:
-  # Stop the motors, even if there is an exception
-  # or the user presses Ctrl+C to kill the process.
-  motors.setSpeeds(0, 0)
 
+
+if __name__ == "__main__":
+    control = ShuttersMotorControl()      
+    #control.halfopen()
+    #control.close()
+    #control.open()
