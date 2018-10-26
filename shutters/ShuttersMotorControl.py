@@ -130,8 +130,8 @@ class ShuttersMotorControl(object):
 
 
 
-if __name__ == "__main__":
-    control = ShuttersMotorControl()      
+#if __name__ == "__main__":
+    #control = ShuttersMotorControl()      
     #control.halfopen()
     #control.close()
     #control.open()

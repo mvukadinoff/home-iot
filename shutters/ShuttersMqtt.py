@@ -1,7 +1,7 @@
 import paho.mqtt.client as mqtt
 import time
 import logging
-
+from ShuttersMotorControl import ShuttersMotorControl
 ## temporary while I write the controller class
 from subprocess import call
 
@@ -9,7 +9,7 @@ class ShuttersMqtt(object):
 
 
     def __init__(self, broker_address, broker_port=1883):
-        self.client = mqtt.Client() #create new instance
+        self.client = mqtt.Client(client_id="shutters", clean_session=False) #create new instance
         logging.basicConfig(level=logging.DEBUG)
         logger = logging.getLogger(__name__)
         self.client.enable_logger(logger)
@@ -19,6 +19,7 @@ class ShuttersMqtt(object):
         self.client.subscribe("shutters/command")
         print("Subscribed to shutters ")
         self.client.on_message=self.on_message
+        self.motcontrol = ShuttersMotorControl()
 
     def on_message(self,client, userdata, message):
         print("message received " ,str(message.payload.decode("utf-8")))
@@ -27,14 +28,17 @@ class ShuttersMqtt(object):
         print("message retain flag=",message.retain)
         cmd = str(message.payload.decode("utf-8"))
         if cmd == "OPEN":
-            call(['python','/root/shutters-pyh3.py'])
-            call(['python','/root/shutters-mot1-pyh3-copy-goup.py'])
+            self.motcontrol.open()
+            #call(['python','/root/shutters-pyh3.py'])
+            #call(['python','/root/shutters-mot1-pyh3-copy-goup.py'])
         elif cmd == "CLOSE":
-            call(['python','/root/shutters-pyh3-copy-godown.py'])
-            call(['python','/root/shutters-mot1-pyh3-copy-godown.py'])
+            self.motcontrol.close()
+            #call(['python','/root/shutters-pyh3-copy-godown.py'])
+            #call(['python','/root/shutters-mot1-pyh3-copy-godown.py'])
         elif cmd == "SEMIOPEN":
-            call(['python','/root/shutters-pyh3-copy-halfopen.py'])
-            call(['python','/root/shutters-mot1-halfopen.py'])
+            self.motcontrol.halfopen()
+            #call(['python','/root/shutters-pyh3-copy-halfopen.py'])
+            #call(['python','/root/shutters-mot1-halfopen.py'])
   
     def listen(self):
         #self.client.loop_start()
