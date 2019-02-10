@@ -33,6 +33,16 @@ def daikinClimaGetTemp():
     daikin = Daikinclima()
     return jsonify(daikin.getTemp())
 
+@app.route('/homeiot/api/v1.0/daikinclima/switchon', methods = ['POST'])
+def daikinClimaSwitchOn():
+    try:
+        mode = request.form['mode']
+        temp = request.form['temp']
+    except Exception as e:
+        print("ERROR: apiserver daikinClimaSwitchOn: Failed to get parameters " + str(e) )
+    daikin = Daikinclima()
+    return jsonify(daikin.switchOn(mode,temp))
+
 
 @app.route('/homeiot/api/v1.0/mirobo/status', methods = ['GET'])
 def miRoboStatus():
@@ -97,10 +107,10 @@ def shuttersCommand():
        broker=conf.configOpt["mqtt_broker"]
        shutters=ShuttersController(broker)
        response=shutters.ShuttersCommand(command)
+       print("Shutters: sent message to mqtt broker " + broker+ " command:" + command + " " +  str(response))
     except Exception as e:
        print("RestAPIShutters: ERROR command param not supplied, please specify either OPEN,CLOSE,SEMIOPEN,UP,DOWN or error connecting " + str(e))
        response= str(e)
-
     return jsonify(response)
 
 
