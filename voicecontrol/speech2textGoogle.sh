@@ -1,6 +1,6 @@
 #!/bin/bash
  
-KEY=AIzaSyA9Q8G_tx85UUk5Qpi8buOLtbduhNZJUuc
+KEY=$(awk -F "=" '/google_api_key/ {print $2}' ../conf.ini)
 URL="https://speech.googleapis.com/v1/speech:recognize?key=$KEY"
 AUDIODIR=/home/ina/VoiceCommands/
 AUDFORMAT=mp3
@@ -8,9 +8,10 @@ AUDFORMAT=mp3
 #MILIGHTIP=192.168.1.23
 MILIGHTIP=192.168.1.15
 
-MILIGHTTOKEN=e876fafc013d49e67b07737f13382eba
+MILIGHTTOKEN=$(awk -F "=" '/milight_token/ {print $2}' ../conf.ini)
 
-
+echo Got Google key from config $URL
+echo Got Token from config $MILIGHTTOKEN
 
 function randomID() {
   maxval=$1
