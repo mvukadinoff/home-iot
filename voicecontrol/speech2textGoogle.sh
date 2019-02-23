@@ -21,7 +21,7 @@ function randomID() {
 function playReply() {
   speechText=$1
   randomID $2
-  aplay ${AUDIODIR}/${speechText}${randId}.${AUDFORMAT}
+  mpg123 ${AUDIODIR}/${speechText}${randId}.${AUDFORMAT}  2> /dev/null
 }
 
 function strindex() {
