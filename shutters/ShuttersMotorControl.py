@@ -25,7 +25,7 @@ class ShuttersMotorControl(object):
 
     def __init__(self, broker_address="localhost", broker_port=1883):
         self.client = mqtt.Client() #create new instance
-        logging.basicConfig(level=logging.DEBUG)
+        #logging.basicConfig(level=logging.DEBUG)
         logger = logging.getLogger(__name__)
         self.client.enable_logger(logger)
         #self.client.connect(broker_address,broker_port,60) #connect to broker
