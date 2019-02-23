@@ -2,6 +2,8 @@
  
 KEY=AIzaSyA9Q8G_tx85UUk5Qpi8buOLtbduhNZJUuc
 URL="https://speech.googleapis.com/v1/speech:recognize?key=$KEY"
+echo "Signal that wake word is detected and we're ready for a command"
+aplay /root/yes.wav
 echo "Recording 10 sec mono audio"
 arecord -D plughw:2,0 -f cd -t wav -d 3 -q -r 44100 -c 1 | flac - -s -f --best -o file.flac;
 echo "Encoding in base64 as per Google standard"
@@ -31,7 +33,11 @@ echo $OUTPUT
 echo ""
  
 #rm file.flac  > /dev/null 2>&1
- 
+
+function randomID() {
+  maxval=$1
+  randId=$(( $RANDOM % $maxval ))
+} 
 strindex() {
   x="${1%%$2*}"
   [[ $x = $1 ]] && echo -1 || echo ${#x}
