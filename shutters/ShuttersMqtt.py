@@ -10,7 +10,7 @@ class ShuttersMqtt(object):
 
     def __init__(self, broker_address, broker_port=1883):
         self.client = mqtt.Client(client_id="shutters", clean_session=False) #create new instance
-        logging.basicConfig(level=logging.DEBUG)
+        #logging.basicConfig(level=logging.DEBUG)
         logger = logging.getLogger(__name__)
         self.client.enable_logger(logger)
         self.client.connect(broker_address,broker_port,60) #connect to broker
