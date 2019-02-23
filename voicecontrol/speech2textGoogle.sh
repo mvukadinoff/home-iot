@@ -12,6 +12,25 @@ MILIGHTTOKEN=e876fafc013d49e67b07737f13382eba
 
 
 
+function randomID() {
+  maxval=$1
+  randId=$(( ($RANDOM % $maxval)+1 ))
+}
+
+function playReply() {
+  speechText=$1
+  randomID $2
+  aplay ${AUDIODIR}/${speechText}${randId}.${AUDFORMAT}
+}
+
+function strindex() {
+  x="${1%%$2*}"
+  [[ $x = $1 ]] && echo -1 || echo ${#x}
+}
+
+
+
+
 echo "Signal that wake word is detected and we're ready for a command"
 playReply "Yes" 3
 echo "Recording 10 sec mono audio"
@@ -44,22 +63,6 @@ echo ""
  
 #rm file.flac  > /dev/null 2>&1
 
-function randomID() {
-  maxval=$1
-  randId=$(( ($RANDOM % $maxval)+1 ))
-}
-
-function playReply() {
-  speechText=$1
-  randomID $2
-  aplay ${AUDIODIR}/${speechText}${randId}.${AUDFORMAT}
-}
-
-function strindex() {
-  x="${1%%$2*}"
-  [[ $x = $1 ]] && echo -1 || echo ${#x}
-}
- 
 OUTPUT=$(echo $OUTPUT | sed 's/[[:upper:]]*/\L&/' )
  
 if (($(strindex "$OUTPUT" "вдигни щори") != -1));  then
