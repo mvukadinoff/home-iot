@@ -2,8 +2,18 @@
  
 KEY=AIzaSyA9Q8G_tx85UUk5Qpi8buOLtbduhNZJUuc
 URL="https://speech.googleapis.com/v1/speech:recognize?key=$KEY"
+AUDIODIR=/home/ina/VoiceCommands/
+AUDFORMAT=mp3
+
+#MILIGHTIP=192.168.1.23
+MILIGHTIP=192.168.1.15
+
+MILIGHTTOKEN=e876fafc013d49e67b07737f13382eba
+
+
+
 echo "Signal that wake word is detected and we're ready for a command"
-aplay /root/yes.wav
+playReply "Yes" 3
 echo "Recording 10 sec mono audio"
 arecord -D plughw:2,0 -f cd -t wav -d 3 -q -r 44100 -c 1 | flac - -s -f --best -o file.flac;
 echo "Encoding in base64 as per Google standard"
@@ -36,9 +46,16 @@ echo ""
 
 function randomID() {
   maxval=$1
-  randId=$(( $RANDOM % $maxval ))
-} 
-strindex() {
+  randId=$(( ($RANDOM % $maxval)+1 ))
+}
+
+function playReply() {
+  speechText=$1
+  randomID $2
+  aplay ${AUDIODIR}/${speechText}${randId}.${AUDFORMAT}
+}
+
+function strindex() {
   x="${1%%$2*}"
   [[ $x = $1 ]] && echo -1 || echo ${#x}
 }
@@ -48,27 +65,30 @@ OUTPUT=$(echo $OUTPUT | sed 's/[[:upper:]]*/\L&/' )
 if (($(strindex "$OUTPUT" "вдигни щори") != -1));  then
   echo "Command recognized ! :  For opening shutters"
   /usr/bin/mosquitto_pub -h localhost -t 'shutters/command' -m "SEMIOPEN"
+  playReply "CommandAccepted" 2
 fi
 
 if (($(strindex "$OUTPUT" "пусни щори") != -1));  then
   echo "Command recognized ! : For closing shutters"
   /usr/bin/mosquitto_pub -h localhost -t 'shutters/command' -m "CLOSE"
+  playReply "CommandAccepted" 2
 fi
 
-#MILIGHTIP=192.168.1.23
-MILIGHTIP=192.168.1.15
-
-MILIGHTTOKEN=e876fafc013d49e67b07737f13382eba
+CMDRECOGNIZED=0
 
 if (($(strindex "$OUTPUT" "светни ламп") != -1)) || (($(strindex "$OUTPUT" "пусни ламп") != -1));  then
    echo "Command recognized ! : For turning on lights"
    miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN on
+   CMDRECOGNIZED=1
+   playReply "Lights" 1
 fi
 
 
 if (($(strindex "$OUTPUT" "гаси ламп") != -1));  then
   echo "Command recognized ! : For shutting off lights"
   miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN off
+  CMDRECOGNIZED=1
+  playReply "Lights" 1
 fi
 
 
@@ -77,11 +97,19 @@ if (($(strindex "$OUTPUT" "мека светлина") != -1))   || (($(strindex
   miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN on
   miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN set_brightness 20
   miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN set_color_temperature 20
+  CMDRECOGNIZED=1
+  playReply "Lights" 1
 fi
 
 if (($(strindex "$OUTPUT" "усили ламп") != -1));  then
   echo "Command recognized ! : Turn up the light power"
   miceil --ip $MILIGHTIP --token $MILIGHTTOKEN set_brightness 100
   miceil --ip $MILIGHTIP --token $MILIGHTTOKEN set_color_temperature 30
+  CMDRECOGNIZED=1
+  playReply "Lights" 1
 fi
 
+if [ $CMDRECOGNIZED -eq 0 ]; then
+  echo "No command recognized"
+  playReply "UnknownCommand" 4
+fi
