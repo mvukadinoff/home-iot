@@ -64,49 +64,49 @@ OUTPUT=$(echo $OUTPUT | sed 's/[[:upper:]]*/\L&/' )
  
 if (($(strindex "$OUTPUT" "вдигни щори") != -1));  then
   echo "Command recognized ! :  For opening shutters"
-  /usr/bin/mosquitto_pub -h localhost -t 'shutters/command' -m "SEMIOPEN"
   playReply "CommandAccepted" 2
+  /usr/bin/mosquitto_pub -h localhost -t 'shutters/command' -m "SEMIOPEN"
 fi
 
 if (($(strindex "$OUTPUT" "пусни щори") != -1));  then
   echo "Command recognized ! : For closing shutters"
-  /usr/bin/mosquitto_pub -h localhost -t 'shutters/command' -m "CLOSE"
   playReply "CommandAccepted" 2
+  /usr/bin/mosquitto_pub -h localhost -t 'shutters/command' -m "CLOSE"
 fi
 
 CMDRECOGNIZED=0
 
 if (($(strindex "$OUTPUT" "светни ламп") != -1)) || (($(strindex "$OUTPUT" "пусни ламп") != -1));  then
    echo "Command recognized ! : For turning on lights"
+   playReply "Lights" 1
    miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN on
    CMDRECOGNIZED=1
-   playReply "Lights" 1
 fi
 
 
 if (($(strindex "$OUTPUT" "гаси ламп") != -1));  then
   echo "Command recognized ! : For shutting off lights"
+  playReply "Lights" 1
   miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN off
   CMDRECOGNIZED=1
-  playReply "Lights" 1
 fi
 
 
 if (($(strindex "$OUTPUT" "мека светлина") != -1))   || (($(strindex "$OUTPUT" "романтика") != -1))  ;  then
   echo "Command recognized ! : For soft light"
+  playReply "Lights" 1
   miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN on
   miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN set_brightness 20
   miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN set_color_temperature 20
   CMDRECOGNIZED=1
-  playReply "Lights" 1
 fi
 
 if (($(strindex "$OUTPUT" "усили ламп") != -1));  then
   echo "Command recognized ! : Turn up the light power"
+  playReply "Lights" 1
   miceil --ip $MILIGHTIP --token $MILIGHTTOKEN set_brightness 100
   miceil --ip $MILIGHTIP --token $MILIGHTTOKEN set_color_temperature 30
   CMDRECOGNIZED=1
-  playReply "Lights" 1
 fi
 
 if [ $CMDRECOGNIZED -eq 0 ]; then
