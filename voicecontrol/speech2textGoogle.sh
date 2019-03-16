@@ -1,14 +1,14 @@
 #!/bin/bash
- 
-KEY=$(awk -F "=" '/google_api_key/ {print $2}' ../conf.ini)
+CONFDIR=/usr/local/bin/home-iot
+KEY=$(awk -F "=" '/google_api_key/ {print $2}' $CONFDIR/conf.ini)
 URL="https://speech.googleapis.com/v1/speech:recognize?key=$KEY"
 AUDIODIR=/home/ina/VoiceCommands/
 AUDFORMAT=mp3
-
 #MILIGHTIP=192.168.1.23
 MILIGHTIP=192.168.1.15
-
-MILIGHTTOKEN=$(awk -F "=" '/milight_token/ {print $2}' ../conf.ini)
+MILIGHTIP2=192.168.1.16
+MILIGHTTOKEN=$(awk -F "=" '/milight_token/ {print $2}' $CONFDIR/conf.ini)
+MILIGHTTOKEN2=$(awk -F "=" '/milight_tok2/ {print $2}' $CONFDIR/conf.ini)
 
 echo Got Google key from config $URL
 echo Got Token from config $MILIGHTTOKEN
@@ -84,6 +84,7 @@ if (($(strindex "$OUTPUT" "светни ламп") != -1)) || (($(strindex "$OUT
    echo "Command recognized ! : For turning on lights"
    playReply "Lights" 1
    miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN on
+   miceil --ip $MILIGHTIP2  --token $MILIGHTTOKEN2 on
    CMDRECOGNIZED=1
 fi
 
@@ -92,6 +93,7 @@ if (($(strindex "$OUTPUT" "гаси ламп") != -1));  then
   echo "Command recognized ! : For shutting off lights"
   playReply "Lights" 1
   miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN off
+  miceil --ip $MILIGHTIP2  --token $MILIGHTTOKEN2 off
   CMDRECOGNIZED=1
 fi
 
@@ -102,6 +104,9 @@ if (($(strindex "$OUTPUT" "мека светлина") != -1))   || (($(strindex
   miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN on
   miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN set_brightness 20
   miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN set_color_temperature 20
+  miceil --ip $MILIGHTIP2  --token $MILIGHTTOKEN2 on
+  miceil --ip $MILIGHTIP2  --token $MILIGHTTOKEN2 set_brightness 20
+  miceil --ip $MILIGHTIP2  --token $MILIGHTTOKEN2 set_color_temperature 20
   CMDRECOGNIZED=1
 fi
 
@@ -110,6 +115,8 @@ if (($(strindex "$OUTPUT" "усили ламп") != -1));  then
   playReply "Lights" 1
   miceil --ip $MILIGHTIP --token $MILIGHTTOKEN set_brightness 100
   miceil --ip $MILIGHTIP --token $MILIGHTTOKEN set_color_temperature 30
+  miceil --ip $MILIGHTIP2 --token $MILIGHTTOKEN2 set_brightness 100
+  miceil --ip $MILIGHTIP2 --token $MILIGHTTOKEN2 set_color_temperature 30
   CMDRECOGNIZED=1
 fi
 
