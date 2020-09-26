@@ -71,7 +71,7 @@ class ShuttersMotorControl(object):
 
     def close(self):
         print("Closing shutters")
-        print("Motor 1 closing")
+        #print("Motor 1 closing")
         self.motorAction(motors.motor1,self.forward_speeds,800,self.pinShutter1closedSensor)
         print("Motor 2 closing")
         self.motorAction(motors.motor2,self.reverse_speeds,900,self.pinShutter2closedSensor)
@@ -83,9 +83,9 @@ class ShuttersMotorControl(object):
         print("Motor 2 closing")
         self.motorAction(motors.motor2,self.reverse_speeds,900,self.pinShutter2closedSensor)
         print("Shutter 1 opening with the step to let light trough")
-        self.motorAction(motors.motor1,self.reverse_speeds,20,self.pinShutter1openSensor)
+        self.motorAction(motors.motor1,self.reverse_speeds,17,self.pinShutter1openSensor)
         print("Shutter 2 opening with the step to let light trough")
-        self.motorAction(motors.motor2,self.forward_speeds,26,self.pinShutter2openSensor)
+        self.motorAction(motors.motor2,self.forward_speeds,23,self.pinShutter2openSensor)
 
     def stopAllMotors(self):
         motors.setSpeeds(0, 0)
