@@ -12,6 +12,8 @@ import miio
 import sonoff.wsclientglb
 from config.config import Config
 from shutters.controller import ShuttersController
+import subprocess
+import sys, traceback
 
 app = Flask(__name__)
 #app.config['CORS_HEADERS'] = 'Content-Type'
@@ -111,6 +113,34 @@ def shuttersCommand():
     except Exception as e:
        print("RestAPIShutters: ERROR command param not supplied, please specify either OPEN,CLOSE,SEMIOPEN,UP,DOWN or error connecting " + str(e))
        response= str(e)
+    return jsonify(response)
+
+@app.route('/homeiot/api/v1.0/lights', methods = ['POST'])
+def lights():
+    try:
+       lstate=request.form['state']
+       conf = Config()
+       light1token=conf.configOpt["milight_tok1"]
+       light2token=conf.configOpt["milight_tok2"]
+       light1ip=conf.configOpt["milightip1"]
+       light2ip=conf.configOpt["milightip2"]
+       if lstate == "ON":
+           state="on"
+       else:
+           state="off"
+       print("Lights command received: {lstate} {state} ".format(lstate=lstate,state=state))
+       bashCommand = "miceil --ip {lightip}  --token {lighttoken} {state}".format(lightip=light1ip,lighttoken=light1token,state=state)
+       lcmd = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+       output, error = lcmd.communicate()
+       response = str(output) + " " + str(error)
+       bashCommand = "miceil --ip {lightip}  --token {lighttoken} {state}".format(lightip=light2ip,lighttoken=light2token,state=state)
+       lcmd = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+       output, error = lcmd.communicate()
+       response = response + " " + str(output) + " " + str(error)
+    except Exception as e:
+       print("RestAPI Lights: ERROR command param not supplied, please specify either ON or OFF in the state post variable or there was an error controlling the lights " + str(e))
+       traceback.print_exc(file=sys.stdout)
+       response= "There was an error controlling the lights" + str(e)
     return jsonify(response)
 
 

@@ -1,14 +1,15 @@
 #!/bin/bash
- 
-KEY=$(awk -F "=" '/google_api_key/ {print $2}' ../conf.ini)
+CONFDIR=/usr/local/bin/home-iot
+KEY=$(awk -F "=" '/google_api_key/ {print $2}' $CONFDIR/conf.ini)
 URL="https://speech.googleapis.com/v1/speech:recognize?key=$KEY"
 AUDIODIR=/home/ina/VoiceCommands/
 AUDFORMAT=mp3
-
-#MILIGHTIP=192.168.1.23
-MILIGHTIP=192.168.1.15
-
-MILIGHTTOKEN=$(awk -F "=" '/milight_token/ {print $2}' ../conf.ini)
+MILIGHTIP=$(awk -F "=" '/milightip1/ {print $2}' $CONFDIR/conf.ini)
+MILIGHTIP2=$(awk -F "=" '/milightip2/ {print $2}' $CONFDIR/conf.ini)
+MILIGHTTOKEN=$(awk -F "=" '/milight_tok1/ {print $2}' $CONFDIR/conf.ini)
+MILIGHTTOKEN2=$(awk -F "=" '/milight_tok2/ {print $2}' $CONFDIR/conf.ini)
+MIVACIP=$(awk -F "=" '/mivac_ip/ {print $2}' $CONFDIR/conf.ini)
+MIVACTOKEN=$(awk -F "=" '/mivac_token/ {print $2}' $CONFDIR/conf.ini)
 
 echo Got Google key from config $URL
 echo Got Token from config $MILIGHTTOKEN
@@ -65,25 +66,29 @@ echo ""
 #rm file.flac  > /dev/null 2>&1
 
 OUTPUT=$(echo $OUTPUT | sed 's/[[:upper:]]*/\L&/' )
+
+CMDRECOGNIZED=0
  
 if (($(strindex "$OUTPUT" "вдигни щори") != -1));  then
   echo "Command recognized ! :  For opening shutters"
   playReply "CommandAccepted" 2
   /usr/bin/mosquitto_pub -h localhost -t 'shutters/command' -m "SEMIOPEN"
+  CMDRECOGNIZED=1
 fi
 
 if (($(strindex "$OUTPUT" "пусни щори") != -1));  then
   echo "Command recognized ! : For closing shutters"
   playReply "CommandAccepted" 2
   /usr/bin/mosquitto_pub -h localhost -t 'shutters/command' -m "CLOSE"
+  CMDRECOGNIZED=1
 fi
 
-CMDRECOGNIZED=0
 
 if (($(strindex "$OUTPUT" "светни ламп") != -1)) || (($(strindex "$OUTPUT" "пусни ламп") != -1));  then
    echo "Command recognized ! : For turning on lights"
    playReply "Lights" 1
    miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN on
+   miceil --ip $MILIGHTIP2  --token $MILIGHTTOKEN2 on
    CMDRECOGNIZED=1
 fi
 
@@ -92,24 +97,44 @@ if (($(strindex "$OUTPUT" "гаси ламп") != -1));  then
   echo "Command recognized ! : For shutting off lights"
   playReply "Lights" 1
   miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN off
+  miceil --ip $MILIGHTIP2  --token $MILIGHTTOKEN2 off
   CMDRECOGNIZED=1
 fi
 
 
-if (($(strindex "$OUTPUT" "мека светлина") != -1))   || (($(strindex "$OUTPUT" "романтика") != -1))  ;  then
+if (($(strindex "$OUTPUT" "мека светлина") != -1))   || (($(strindex "$OUTPUT" "романтика") != -1))  || (($(strindex "$OUTPUT" "намали ламп") != -1)) ;  then
   echo "Command recognized ! : For soft light"
   playReply "Lights" 1
   miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN on
-  miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN set_brightness 20
-  miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN set_color_temperature 20
+  miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN set-brightness 20
+  miceil --ip $MILIGHTIP  --token $MILIGHTTOKEN set-color-temperature 20
+  miceil --ip $MILIGHTIP2  --token $MILIGHTTOKEN2 on
+  miceil --ip $MILIGHTIP2  --token $MILIGHTTOKEN2 set-brightness 20
+  miceil --ip $MILIGHTIP2  --token $MILIGHTTOKEN2 set-color-temperature 20
   CMDRECOGNIZED=1
 fi
 
 if (($(strindex "$OUTPUT" "усили ламп") != -1));  then
   echo "Command recognized ! : Turn up the light power"
   playReply "Lights" 1
-  miceil --ip $MILIGHTIP --token $MILIGHTTOKEN set_brightness 100
-  miceil --ip $MILIGHTIP --token $MILIGHTTOKEN set_color_temperature 30
+  miceil --ip $MILIGHTIP --token $MILIGHTTOKEN set-brightness 100
+  miceil --ip $MILIGHTIP --token $MILIGHTTOKEN set-color-temperature 30
+  miceil --ip $MILIGHTIP2 --token $MILIGHTTOKEN2 set-brightness 100
+  miceil --ip $MILIGHTIP2 --token $MILIGHTTOKEN2 set-color-temperature 30
+  CMDRECOGNIZED=1
+fi
+
+if (($(strindex "$OUTPUT" "пусни прахосмукачка") != -1));  then
+  echo "Command recognized ! : For vaccuming"
+  playReply "CommandAccepted" 2
+  mirobo --ip $MIVACIP  --token $MIVACTOKEN start
+  CMDRECOGNIZED=1
+fi
+
+if (($(strindex "$OUTPUT" "при прахосмукачка") != -1));  then
+  echo "Command recognized ! : For vaccum cleaner to return to dock"
+  playReply "CommandAccepted" 2
+  mirobo --ip $MIVACIP  --token $MIVACTOKEN home
   CMDRECOGNIZED=1
 fi
 

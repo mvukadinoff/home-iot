@@ -85,7 +85,7 @@ class ShuttersMotorControl(object):
         print("Shutter 1 opening with the step to let light trough")
         self.motorAction(motors.motor1,self.reverse_speeds,17,self.pinShutter1openSensor)
         print("Shutter 2 opening with the step to let light trough")
-        self.motorAction(motors.motor2,self.forward_speeds,23,self.pinShutter2openSensor)
+        self.motorAction(motors.motor2,self.forward_speeds,19,self.pinShutter2openSensor)
 
     def stopAllMotors(self):
         motors.setSpeeds(0, 0)
