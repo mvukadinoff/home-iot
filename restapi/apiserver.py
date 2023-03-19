@@ -21,7 +21,7 @@ app = Flask(__name__)
 
 @app.route('/homeiot/api/v1.0/test', methods = ['GET'])
 def test():
-    print(request.json)
+    #print(request.json)
     # json_data = request.json
     # p = Process(target=jamcore.api_stack_create, args=(json_data)) # this passes a str instead of json request object
     # p.start()
@@ -52,7 +52,7 @@ def miRoboStatus():
     ip=conf.configOpt["mivac_ip"]
     token=conf.configOpt["mivac_token"]
     start_id=0
-    vac = miio.Vacuum(ip, token, start_id, True)
+    vac = miio.integrations.vacuum.roborock.RoborockVacuum(ip, token, start_id, True)
     res = vac.status()
     jsonresult = {"State": res.state,"Battery": res.battery,"Fanspeed": res.fanspeed,"cleaning_since": str(res.clean_time),"Cleaned_area": res.clean_area  }
     return jsonify(jsonresult)
@@ -63,7 +63,7 @@ def miRoboClean():
     ip=conf.configOpt["mivac_ip"]
     token=conf.configOpt["mivac_token"]
     start_id=0
-    vac = miio.Vacuum(ip, token, start_id, True)
+    vac = miio.integrations.vacuum.roborock.RoborockVacuum(ip, token, start_id, True)
     res = vac.start()
     jsonresult = {"Response": str(res) }
     return jsonify(jsonresult)
@@ -75,7 +75,7 @@ def miRoboDock():
     ip=conf.configOpt["mivac_ip"]
     token=conf.configOpt["mivac_token"]
     start_id=0
-    vac = miio.Vacuum(ip, token, start_id, True)
+    vac = miio.integrations.vacuum.roborock.RoborockVacuum(ip, token, start_id, True)
     res = vac.home()
     jsonresult = {"Response": str(res) }
     return jsonify(jsonresult)
@@ -129,11 +129,13 @@ def lights():
        else:
            state="off"
        print("Lights command received: {lstate} {state} ".format(lstate=lstate,state=state))
-       bashCommand = "miceil --ip {lightip}  --token {lighttoken} {state}".format(lightip=light1ip,lighttoken=light1token,state=state)
+       #bashCommand = "miceil --ip {lightip}  --token {lighttoken} {state}".format(lightip=light1ip,lighttoken=light1token,state=state)
+       bashCommand = "miiocli philipsbulb --ip {lightip}  --token {lighttoken} {state}".format(lightip=light1ip,lighttoken=light1token,state=state)
        lcmd = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
        output, error = lcmd.communicate()
        response = str(output) + " " + str(error)
-       bashCommand = "miceil --ip {lightip}  --token {lighttoken} {state}".format(lightip=light2ip,lighttoken=light2token,state=state)
+       #bashCommand = "miceil --ip {lightip}  --token {lighttoken} {state}".format(lightip=light2ip,lighttoken=light2token,state=state)
+       bashCommand = "miiocli philipsbulb --ip {lightip}  --token {lighttoken} {state}".format(lightip=light2ip,lighttoken=light2token,state=state)
        lcmd = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
        output, error = lcmd.communicate()
        response = response + " " + str(output) + " " + str(error)
