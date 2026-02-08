@@ -734,8 +734,16 @@ class WakeWordDetector:
 
         # Auto-detect supported sample rate for the device, or use forced rate
         if force_sample_rate:
-            self.sample_rate = force_sample_rate
-            logger.info(f"Using forced sample rate: {self.sample_rate} Hz")
+            logger.info(f"Attempting to use forced sample rate: {force_sample_rate} Hz")
+            # Test if the forced rate is actually supported
+            if self._test_sample_rate(force_sample_rate):
+                self.sample_rate = force_sample_rate
+                logger.info(f"✓ Using forced sample rate: {self.sample_rate} Hz")
+            else:
+                logger.warning(f"⚠️  Forced sample rate {force_sample_rate} Hz is not supported by your device")
+                logger.warning(f"   Falling back to auto-detection...")
+                self.sample_rate = self._get_supported_sample_rate()
+                logger.info(f"Using auto-detected sample rate: {self.sample_rate} Hz")
         else:
             self.sample_rate = self._get_supported_sample_rate()
             logger.info(f"Using auto-detected sample rate: {self.sample_rate} Hz")
