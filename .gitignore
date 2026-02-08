@@ -1,1 +1,4 @@
 conf.ini
+venv*
+voicecontrol/VoiceCommands/
+
