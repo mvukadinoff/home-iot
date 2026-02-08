@@ -69,7 +69,8 @@ class VoiceControlConfig:
                 "listen_port": "5000",
                 "mqtt_broker": "localhost",
                 "google_api_key": "",
-                "audio_dir": "voicecontrol/VoiceCommands/"
+                "audio_dir": "voicecontrol/VoiceCommands/",
+                "wakeword_threshold": "0.5"
             }
 
     def get(self, key: str, default: Optional[str] = None) -> str:
@@ -603,8 +604,8 @@ class AudioRecorder:
 
     def record_until_silence(
         self,
-        max_duration: int = 10,
-        silence_duration: float = 1.0,
+        max_duration: int = 7,
+        silence_duration: float = 0.7,
         device_index: Optional[int] = None,
         silence_threshold: int = 700
     ) -> bytes:
@@ -708,7 +709,9 @@ class WakeWordDetector:
         wakeword_models: Optional[List[str]] = None,
         threshold: float = 0.5,
         device_index: Optional[int] = None,
-        volume_threshold: int = 2000
+        volume_threshold: int = 2000,
+        show_volume_meter: bool = False,
+        force_sample_rate: Optional[int] = None
     ):
         """
         Initialize wake word detector
@@ -721,15 +724,23 @@ class WakeWordDetector:
             threshold: Detection threshold (0.0 to 1.0, higher = more strict) for ML models
             device_index: Audio input device index
             volume_threshold: RMS volume threshold for simple detection
+            show_volume_meter: Show live audio volume meter during wake word detection
+            force_sample_rate: Force a specific sample rate (e.g., 16000) instead of auto-detection
         """
         self.device_index = device_index
         self.threshold = threshold
+        self.show_volume_meter = show_volume_meter
         self.audio = pyaudio.PyAudio()
 
-        # Auto-detect supported sample rate for the device
-        self.sample_rate = self._get_supported_sample_rate()
+        # Auto-detect supported sample rate for the device, or use forced rate
+        if force_sample_rate:
+            self.sample_rate = force_sample_rate
+            logger.info(f"Using forced sample rate: {self.sample_rate} Hz")
+        else:
+            self.sample_rate = self._get_supported_sample_rate()
+            logger.info(f"Using auto-detected sample rate: {self.sample_rate} Hz")
+
         self.chunk_size = int(self.sample_rate * 0.08)  # 80ms chunks
-        logger.info(f"Using sample rate: {self.sample_rate} Hz")
 
         self.use_openwakeword = OPENWAKEWORD_AVAILABLE
 
@@ -749,6 +760,14 @@ class WakeWordDetector:
                 )
                 logger.info(f"OpenWakeWord initialized with models: {actual_model_names}, threshold: {threshold}")
                 logger.info(f"Available wake words: {list(self.oww_model.models.keys())}")
+
+                # Debug: Check model sample rate expectations
+                logger.info(f"Model expects sample rate: 16000 Hz (OpenWakeWord default)")
+                logger.info(f"Audio device using: {self.sample_rate} Hz")
+                if self.sample_rate != 16000:
+                    logger.warning(f"⚠️  SAMPLE RATE MISMATCH! Device={self.sample_rate}Hz, Model expects=16000Hz")
+                    logger.warning(f"   This will cause very low detection scores!")
+                    logger.warning(f"   Audio will need to be resampled to 16000 Hz")
             except Exception as e:
                 logger.error(f"Failed to initialize OpenWakeWord: {e}")
                 logger.info("Falling back to simple volume-based wake detection")
@@ -935,6 +954,33 @@ class WakeWordDetector:
         logger.warning("Could not detect supported sample rate, defaulting to 44100 Hz")
         return 44100
 
+    def _resample_audio(self, audio_array: np.ndarray, from_rate: int, to_rate: int) -> np.ndarray:
+        """
+        Resample audio to target sample rate using simple linear interpolation
+
+        Args:
+            audio_array: Input audio as numpy array (int16)
+            from_rate: Source sample rate
+            to_rate: Target sample rate
+
+        Returns:
+            Resampled audio as numpy array (int16)
+        """
+        if from_rate == to_rate:
+            return audio_array
+
+        # Calculate resampling ratio
+        duration = len(audio_array) / from_rate
+        target_length = int(duration * to_rate)
+
+        # Use numpy's interp for simple linear interpolation
+        x_old = np.linspace(0, duration, len(audio_array))
+        x_new = np.linspace(0, duration, target_length)
+
+        # Interpolate and convert back to int16
+        resampled = np.interp(x_new, x_old, audio_array.astype(np.float32))
+        return resampled.astype(np.int16)
+
     def start_listening(self, callback):
         """
         Start listening for wake word
@@ -950,6 +996,17 @@ class WakeWordDetector:
     def _listen_openwakeword(self, callback):
         """Listen using OpenWakeWord"""
         logger.info("Listening for wake word (OpenWakeWord)...")
+        logger.info(f"Detection threshold: {self.threshold} (lower = more sensitive)")
+        if self.show_volume_meter:
+            print("\n💡 Volume meter enabled - watch the levels to verify mic is working!")
+            print(f"   Say the wake word and watch for score changes\n")
+
+        # OpenWakeWord requires 16kHz audio
+        model_sample_rate = 16000
+        needs_resampling = (self.sample_rate != model_sample_rate)
+
+        if needs_resampling:
+            logger.info(f"🔄 Will resample audio: {self.sample_rate}Hz → {model_sample_rate}Hz")
 
         stream = self.audio.open(
             rate=self.sample_rate,
@@ -960,6 +1017,11 @@ class WakeWordDetector:
             input_device_index=self.device_index
         )
 
+        # Track scores for debugging
+        score_log_counter = 0
+        max_score_window = 0.0
+        volume_display_counter = 0
+
         try:
             while True:
                 # Read audio chunk
@@ -968,22 +1030,65 @@ class WakeWordDetector:
                 # Convert to numpy array (int16)
                 audio_array = np.frombuffer(audio_data, dtype=np.int16)
 
+                # Resample to 16kHz if needed (OpenWakeWord requirement)
+                if needs_resampling:
+                    audio_array = self._resample_audio(audio_array, self.sample_rate, model_sample_rate)
+
+                # Calculate volume for meter display
+                if self.show_volume_meter:
+                    rms = np.sqrt(np.mean(audio_array.astype(np.float32) ** 2))
+                    volume_display_counter += 1
+
                 # Get predictions from the model
                 prediction = self.oww_model.predict(audio_array)
 
                 # Check if any wake word exceeded threshold
                 for wake_word, score in prediction.items():
+                    # Track max score for periodic logging
+                    if score > max_score_window:
+                        max_score_window = score
+
+                    # Show volume meter (every 3 chunks to avoid overwhelming output)
+                    if self.show_volume_meter and volume_display_counter >= 3:
+                        bar_length = int(min(rms / 100, 40))
+                        bar = "█" * bar_length
+                        score_bar_length = int(min(score * 40, 40))
+                        score_bar = "▓" * score_bar_length + "░" * (40 - score_bar_length)
+
+                        print(f"\r🎤 Vol: {int(rms):5d} [{bar:40s}] | Score: {score:.3f} [{score_bar}] (need {self.threshold:.2f})",
+                              end="", flush=True)
+                        volume_display_counter = 0
+
+                    # Log scores periodically to help with tuning (every ~2 seconds)
+                    score_log_counter += 1
+                    if score_log_counter >= 25:  # ~2 seconds at 80ms chunks
+                        if max_score_window > 0.01:  # Only log if there's any activity
+                            logger.debug(f"Wake word '{wake_word}' max score: {max_score_window:.3f} (threshold: {self.threshold:.3f})")
+                        score_log_counter = 0
+                        max_score_window = 0.0
+
                     if score >= self.threshold:
-                        logger.info(f"Wake word '{wake_word}' detected! (score: {score:.3f})")
+                        if self.show_volume_meter:
+                            print()  # New line after meter
+                        logger.info(f"✓ Wake word '{wake_word}' detected! (score: {score:.3f} >= threshold: {self.threshold:.3f})")
+                        print(f"✓ Wake word detected! (score: {score:.3f})")
 
                         # Call the callback with the active stream (DON'T close it!)
                         callback(stream)
 
-                        # Reset model state
+                        # Reset model state and counters
                         self.oww_model.reset()
+                        score_log_counter = 0
+                        max_score_window = 0.0
+                        volume_display_counter = 0
+
+                        if self.show_volume_meter:
+                            print()  # Extra line before resuming meter
                         break  # Break out of the wake word check loop
 
         except KeyboardInterrupt:
+            if self.show_volume_meter:
+                print("\n")
             logger.info("Stopping...")
         finally:
             stream.stop_stream()
@@ -1068,9 +1173,11 @@ class VoiceControlSystem:
         config_path: str = "/usr/local/bin/home-iot/conf.ini",
         device_index: Optional[int] = None,
         wakeword_models: Optional[List[str]] = None,
-        threshold: float = 0.5,
+        threshold: Optional[float] = None,
         volume_threshold: int = 2000,
-        recording_silence_threshold: int = 200
+        recording_silence_threshold: int = 200,
+        show_volume_meter: bool = False,
+        force_sample_rate: Optional[int] = None
     ):
         """
         Initialize voice control system
@@ -1081,8 +1188,13 @@ class VoiceControlSystem:
             wakeword_models: List of wake word model names (default: ['alexa'])
                            Available: 'alexa', 'hey_jarvis', 'hey_mycroft', 'timer'
             threshold: Wake word detection threshold (0.0-1.0) for ML models
+                      If None, reads from config file (default: 0.5)
+                      Lower values = more sensitive (e.g., 0.3 will trigger more easily)
+                      Higher values = less sensitive (e.g., 0.7 requires clearer pronunciation)
             volume_threshold: RMS volume threshold for wake detection (default: 2000)
             recording_silence_threshold: RMS volume threshold for silence during recording (default: 200)
+            show_volume_meter: Show live audio volume meter during wake word detection
+            force_sample_rate: Force a specific sample rate (e.g., 16000) to avoid resampling
         """
         self.recording_silence_threshold = recording_silence_threshold
         self.device_index = device_index  # Store device index to use for recording
@@ -1094,6 +1206,11 @@ class VoiceControlSystem:
         if not google_api_key:
             raise ValueError("google_api_key not found in config file!")
 
+        # Get threshold from config if not provided as argument
+        if threshold is None:
+            threshold = float(self.config.get('wakeword_threshold', '0.5'))
+            logger.info(f"Using wakeword threshold from config: {threshold}")
+
         self.speech_recognizer = SpeechRecognizer(google_api_key)
         self.command_processor = CommandProcessor(self.config, self.audio_player)
         self.audio_recorder = AudioRecorder(device_index=device_index)
@@ -1102,7 +1219,9 @@ class VoiceControlSystem:
             wakeword_models=wakeword_models,
             threshold=threshold,
             device_index=device_index,
-            volume_threshold=volume_threshold
+            volume_threshold=volume_threshold,
+            show_volume_meter=show_volume_meter,
+            force_sample_rate=force_sample_rate
         )
 
     def on_wake_word_detected(self, audio_stream):
@@ -1120,8 +1239,8 @@ class VoiceControlSystem:
         # Record command using the SAME stream (don't close/reopen!)
         audio_data = self._record_from_stream(
             audio_stream,
-            max_duration=10,
-            silence_duration=1.0,
+            max_duration=7,
+            silence_duration=0.7,
             silence_threshold=self.recording_silence_threshold
         )
 
@@ -1276,8 +1395,11 @@ def main():
     parser.add_argument(
         '--threshold',
         type=float,
-        default=0.5,
-        help='Wake word detection threshold (0.0-1.0, default: 0.5) for ML models'
+        default=None,
+        help='Wake word detection threshold (0.0-1.0, default: from config or 0.5). '
+             'Lower = more sensitive (e.g., 0.3 triggers easier), '
+             'Higher = less sensitive (e.g., 0.7 needs clearer pronunciation). '
+             'If not set, reads from wakeword_threshold in config file.'
     )
     parser.add_argument(
         '--volume-threshold',
@@ -1295,6 +1417,18 @@ def main():
         '--list-devices',
         action='store_true',
         help='List available audio devices and exit'
+    )
+    parser.add_argument(
+        '--show-volume-meter',
+        action='store_true',
+        help='Show live audio volume and detection score meter (helps debug mic issues)'
+    )
+    parser.add_argument(
+        '--sample-rate',
+        type=int,
+        default=None,
+        help='Force specific sample rate in Hz (e.g., 16000). Use 16000 to avoid resampling with OpenWakeWord. '
+             'If not set, auto-detects best rate for your device.'
     )
 
     args = parser.parse_args()
@@ -1330,7 +1464,9 @@ def main():
         wakeword_models=args.wakewords,
         threshold=args.threshold,
         volume_threshold=args.volume_threshold,
-        recording_silence_threshold=args.recording_silence_threshold
+        recording_silence_threshold=args.recording_silence_threshold,
+        show_volume_meter=args.show_volume_meter,
+        force_sample_rate=args.sample_rate
     )
 
     system.run()
