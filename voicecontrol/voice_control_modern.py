@@ -792,47 +792,80 @@ class WakeWordDetector:
 
     def _ensure_models_downloaded(self, wakeword_models: List[str]) -> List[str]:
         """
-        Ensure wake word models are downloaded from HuggingFace
+        Ensure wake word models are downloaded
 
         Supports two formats:
-        - Standard model names: 'alexa', 'hey_jarvis', etc.
+        - Standard model names: 'alexa', 'hey_jarvis', etc. (uses openwakeword.utils.download_models)
         - HuggingFace repo paths: 'username/repo-name' (e.g., 'johnthenerd/openwakeword-hey-glados')
 
         Args:
             wakeword_models: List of model names or HuggingFace repo paths
 
         Returns:
-            List of actual model names (without .onnx) to use with OpenWakeWord
+            List of actual model names (without .onnx/.tflite) to use with OpenWakeWord
         """
-        try:
-            from huggingface_hub import hf_hub_download, list_repo_files
-        except ImportError:
-            logger.warning("huggingface_hub not installed - cannot auto-download models")
-            logger.info("Install with: pip install huggingface_hub")
-            return wakeword_models
-
         import openwakeword
-        import shutil
+        from openwakeword.utils import download_models
 
         # Get OpenWakeWord's models directory
         oww_path = os.path.dirname(openwakeword.__file__)
         models_dir = os.path.join(oww_path, 'resources', 'models')
         os.makedirs(models_dir, exist_ok=True)
 
-        # Built-in model mappings (standard names -> HuggingFace repo)
-        builtin_models = {
-            'alexa': ('davidscripka/openwakeword', 'alexa_v0.1.onnx'),
-            'hey_jarvis': ('davidscripka/openwakeword', 'hey_jarvis_v0.1.onnx'),
-            'hey_mycroft': ('davidscripka/openwakeword', 'hey_mycroft_v0.1.onnx'),
-            'timer': ('davidscripka/openwakeword', 'timer_v0.1.onnx'),
-        }
+        # Built-in model names (standard names supported by openwakeword)
+        builtin_models = {'alexa', 'hey_jarvis', 'hey_mycroft', 'timer'}
+
+        # Separate custom models (with '/') from built-in models
+        custom_models = [m for m in wakeword_models if '/' in m]
+        standard_models = [m for m in wakeword_models if '/' not in m]
 
         # Track actual model names to return
         actual_models = []
 
-        for model_spec in wakeword_models:
-            # Check if it's a HuggingFace repo path (contains '/') or a standard name
-            if '/' in model_spec:
+        # Download built-in models using openwakeword.utils.download_models()
+        if standard_models:
+            try:
+                logger.info(f"📥 Downloading built-in models: {', '.join(standard_models)}")
+                print(f"📥 Downloading built-in models: {', '.join(standard_models)}")
+
+                # Convert model names to filename format expected by download_models
+                # e.g., 'alexa' -> 'alexa_v0.1'
+                model_filenames = []
+                for model in standard_models:
+                    if model in builtin_models:
+                        model_filenames.append(model)
+                    else:
+                        logger.warning(f"Unknown built-in model: {model} - trying as-is")
+                        model_filenames.append(model)
+
+                # Download models (this also downloads melspectrogram.tflite and other required files)
+                download_models(model_names=model_filenames, target_directory=models_dir)
+
+                logger.info(f"✓ Built-in models ready: {', '.join(standard_models)}")
+                print(f"✓ Built-in models ready: {', '.join(standard_models)}")
+
+                # Use the standard names for built-in models
+                actual_models.extend(standard_models)
+
+            except Exception as e:
+                logger.error(f"Failed to download built-in models: {e}")
+                print(f"❌ Failed to download built-in models: {e}")
+                # Try to continue anyway - models might already exist
+                actual_models.extend(standard_models)
+
+        # Download custom models from HuggingFace
+        if custom_models:
+            try:
+                from huggingface_hub import hf_hub_download, list_repo_files
+            except ImportError:
+                logger.error("huggingface_hub not installed - cannot download custom models")
+                logger.info("Install with: pip install huggingface_hub")
+                print("❌ huggingface_hub required for custom models - install with: pip install huggingface_hub")
+                return actual_models
+
+            import shutil
+
+            for model_spec in custom_models:
                 # Custom HuggingFace model: 'username/repo-name'
                 repo_id = model_spec
                 model_name = repo_id.split('/')[-1]
@@ -842,8 +875,8 @@ class WakeWordDetector:
                 try:
                     logger.info(f"🔍 Discovering models in {repo_id}...")
                     all_files = list_repo_files(repo_id=repo_id)
-                    tflite_files = [f for f in all_files if f.endswith('.tflite')]
-                    onnx_files = [f for f in all_files if f.endswith('.onnx')]
+                    tflite_files = [f for f in all_files if f.endswith('.tflite') and 'melspectrogram' not in f]
+                    onnx_files = [f for f in all_files if f.endswith('.onnx') and 'melspectrogram' not in f]
 
                     # Prefer .tflite over .onnx (better OpenWakeWord support)
                     model_files = tflite_files if tflite_files else onnx_files
@@ -883,47 +916,6 @@ class WakeWordDetector:
                 except Exception as e:
                     logger.error(f"Failed to process {repo_id}: {e}")
                     print(f"❌ Failed to download {model_name}: {e}")
-
-            elif model_spec in builtin_models:
-                # Built-in model
-                repo_id, filename = builtin_models[model_spec]
-                model_name = model_spec
-
-                # Check if model already exists
-                local_path = os.path.join(models_dir, filename)
-                if os.path.exists(local_path):
-                    logger.debug(f"Model already exists: {filename}")
-                    # Use the standard name for built-in models
-                    actual_models.append(model_spec)
-                    continue
-
-                # Download from HuggingFace
-                try:
-                    logger.info(f"📥 Downloading {model_name} model from HuggingFace...")
-                    print(f"📥 Downloading wake word model: {model_name}")
-
-                    downloaded_path = hf_hub_download(
-                        repo_id=repo_id,
-                        filename=filename,
-                        cache_dir=None  # Use default cache
-                    )
-
-                    # Copy to OpenWakeWord models directory
-                    shutil.copy(downloaded_path, local_path)
-                    logger.info(f"✓ Downloaded and installed: {filename}")
-                    print(f"✓ Model ready: {model_name}")
-
-                    # Track the actual model name
-                    actual_models.append(model_spec)
-
-                except Exception as e:
-                    logger.error(f"Failed to download {model_spec}: {e}")
-                    print(f"❌ Failed to download {model_name}: {e}")
-            else:
-                logger.warning(f"Unknown model: {model_spec} - trying as filename")
-                # Assume it's already a valid model name
-                actual_models.append(model_spec)
-                continue
 
         return actual_models
 
