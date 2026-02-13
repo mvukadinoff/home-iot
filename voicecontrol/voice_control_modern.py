@@ -1106,8 +1106,9 @@ class WakeWordDetector:
         """Listen using simple volume-based detection (2 claps)"""
         logger.info("Listening for wake signal (clap twice or make 2 loud sounds)...")
         logger.info(f"Volume threshold: {self.volume_threshold} (clap/loud sound must exceed this)")
-        print(f"\n💡 TIP: Watch the volume levels below. Clap or speak loudly to see what levels you get.")
-        print(f"    If claps don't reach {self.volume_threshold}, adjust with --volume-threshold\n")
+        if self.show_volume_meter:
+            print(f"\n💡 TIP: Watch the volume levels below. Clap or speak loudly to see what levels you get.")
+            print(f"    If claps don't reach {self.volume_threshold}, adjust with --volume-threshold\n")
 
         stream = self.audio.open(
             rate=self.sample_rate,
@@ -1130,8 +1131,8 @@ class WakeWordDetector:
 
                 current_time = time.time()
 
-                # Print volume level every 2 seconds for monitoring
-                if current_time - last_print_time > 2:
+                # Print volume level every 2 seconds for monitoring (only if show_volume_meter is enabled)
+                if self.show_volume_meter and current_time - last_print_time > 2:
                     bar_length = int(min(rms / 100, 50))
                     bar = "█" * bar_length
                     status = "🔊 LOUD!" if rms > self.volume_threshold else ""
@@ -1146,11 +1147,13 @@ class WakeWordDetector:
                     # Avoid detecting same clap multiple times
                     if not self.clap_history or (current_time - self.clap_history[-1]) > 0.2:
                         self.clap_history.append(current_time)
-                        print(f"\n🎵 Loud sound {len(self.clap_history)}/2 detected (level: {int(rms)})")
+                        if self.show_volume_meter:
+                            print(f"\n🎵 Loud sound {len(self.clap_history)}/2 detected (level: {int(rms)})")
 
                     # If we got 2 claps within the window, trigger wake
                     if len(self.clap_history) >= 2:
-                        print("\n✅ Wake signal detected!")
+                        if self.show_volume_meter:
+                            print("\n✅ Wake signal detected!")
                         logger.info("Wake signal detected (2 loud sounds)!")
                         self.clap_history = []  # Reset
 
@@ -1158,7 +1161,8 @@ class WakeWordDetector:
                         callback(stream)
 
                         # Reset for next wake word detection
-                        print("\n📊 Listening for wake signal again...")
+                        if self.show_volume_meter:
+                            print("\n📊 Listening for wake signal again...")
                         last_print_time = time.time()
 
         except KeyboardInterrupt:
@@ -1249,7 +1253,8 @@ class VoiceControlSystem:
             audio_stream,
             max_duration=7,
             silence_duration=0.7,
-            silence_threshold=self.recording_silence_threshold
+            silence_threshold=self.recording_silence_threshold,
+            show_volume_meter=self.wake_word_detector.show_volume_meter
         )
 
         # Transcribe with the correct sample rate!
@@ -1269,7 +1274,8 @@ class VoiceControlSystem:
         stream,
         max_duration: int = 10,
         silence_duration: float = 1.0,
-        silence_threshold: int = 200
+        silence_threshold: int = 200,
+        show_volume_meter: bool = False
     ) -> bytes:
         """
         Record from an existing stream without closing it
@@ -1279,12 +1285,14 @@ class VoiceControlSystem:
             max_duration: Maximum recording duration in seconds
             silence_duration: Duration of silence to stop recording
             silence_threshold: RMS volume threshold for silence
+            show_volume_meter: Show live volume meter during recording
 
         Returns:
             Raw audio bytes
         """
         logger.info(f"Recording (max {max_duration}s, stop after {silence_duration}s silence)...")
-        print(f"🎤 Speak now! Calibrating silence threshold...")
+        if show_volume_meter:
+            print(f"Speak now! Calibrating silence threshold...")
 
         chunk_duration = 30  # ms
         chunk_size = self.wake_word_detector.chunk_size
@@ -1328,8 +1336,8 @@ class VoiceControlSystem:
                 else:
                     silent_chunks = 0  # Reset on any sound
 
-                # Visual feedback every few chunks
-                if i % 5 == 0:
+                # Visual feedback every few chunks (only if show_volume_meter is enabled)
+                if show_volume_meter and i % 5 == 0:
                     bar_length = int(min(rms / 50, 40))
                     bar = "█" * bar_length
                     silent_bar = int((silent_chunks / silence_chunks_needed) * 20)
@@ -1341,17 +1349,20 @@ class VoiceControlSystem:
 
                 # Stop if we've had enough continuous silence
                 if silent_chunks >= silence_chunks_needed:
-                    print(f"\n✅ {silence_duration}s of silence detected, processing...")
+                    if show_volume_meter:
+                        print(f"\n{silence_duration}s of silence detected, processing...")
                     logger.info(f"Silence detected ({silent_chunks} chunks), stopping recording")
                     break
 
         except Exception as e:
             logger.error(f"Error during recording: {e}")
-            print()
+            if show_volume_meter:
+                print()
 
         duration = len(frames) * chunk_duration / 1000
         logger.info(f"Recorded {duration:.2f} seconds")
-        print(f"📼 Recorded {duration:.2f} seconds of audio")
+        if show_volume_meter:
+            print(f"Recorded {duration:.2f} seconds of audio")
         return b''.join(frames)
 
     def run(self):

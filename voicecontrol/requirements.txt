@@ -11,7 +11,7 @@ openwakeword>=0.6.0
 onnxruntime>=1.16.0
 huggingface_hub>=0.20.0
 
-# Audio Processing
+# Audio Processing , we need apt-get install -y portaudio19-dev
 pyaudio>=0.2.13
 
 # Optional: Voice Activity Detection (may have compatibility issues with Python 3.13+)
