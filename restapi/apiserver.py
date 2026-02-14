@@ -119,7 +119,7 @@ def shuttersCommand():
 def lights():
     try:
        lstate=request.form['state']
-       print("Lights command received: {lstate} {state} ".format(lstate=lstate,state=state))
+       print("Lights command received: {lstate}".format(lstate=lstate))
        conf = Config()
        light1token=conf.configOpt["milight_tok1"]
        light2token=conf.configOpt["milight_tok2"]
@@ -136,7 +136,7 @@ def lights():
            state="off"
            bulb1.off()
            bulb2.off()
-       print("Lights controlled successfully")
+       response= "Succesfully switched lights " + str(state)
     except Exception as e:
        print("RestAPI Lights: ERROR command param not supplied, please specify either ON or OFF in the state post variable or there was an error controlling the lights " + str(e))
        traceback.print_exc(file=sys.stdout)
