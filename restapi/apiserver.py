@@ -119,29 +119,23 @@ def shuttersCommand():
 def lights():
     try:
        lstate=request.form['state']
+       print("Lights command received: {lstate} {state} ".format(lstate=lstate,state=state))
        conf = Config()
        light1token=conf.configOpt["milight_tok1"]
        light2token=conf.configOpt["milight_tok2"]
        light1ip=conf.configOpt["milightip1"]
        light2ip=conf.configOpt["milightip2"]
 
-       print("Lights command received: {lstate}".format(lstate=lstate))
-
-       # Control first light using miio library
-       bulb1 = miio.PhilipsBulb(light1ip, light1token)
+       bulb1 = miio.PhilipsBulb(light1ip,light1token)
+       bulb2 = miio.PhilipsBulb(light2ip,light2token)
        if lstate == "ON":
+           state="on"
            bulb1.on()
-       else:
-           bulb1.off()
-
-       # Control second light using miio library
-       bulb2 = miio.PhilipsBulb(light2ip, light2token)
-       if lstate == "ON":
            bulb2.on()
        else:
+           state="off"
+           bulb1.off()
            bulb2.off()
-
-       response = {"status": "success", "action": lstate.lower()}
        print("Lights controlled successfully")
     except Exception as e:
        print("RestAPI Lights: ERROR command param not supplied, please specify either ON or OFF in the state post variable or there was an error controlling the lights " + str(e))
