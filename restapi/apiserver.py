@@ -146,6 +146,68 @@ def lights():
     return jsonify(response)
 
 
+@app.route('/homeiot/api/v1.0/lightsdim', methods = ['GET', 'POST'])
+def lightsdim():
+    try:
+       conf = Config()
+       light1token=conf.configOpt["milight_tok1"]
+       light2token=conf.configOpt["milight_tok2"]
+       light1ip=conf.configOpt["milightip1"]
+       light2ip=conf.configOpt["milightip2"]
+
+       print("Lights dim command received - setting brightness to 20%, color temp to 20%")
+
+       # Control first light using miio library
+       bulb1 = miio.PhilipsBulb(light1ip, light1token)
+       bulb1.on()
+       bulb1.set_brightness(20)
+       bulb1.set_color_temperature(20)
+
+       # Control second light using miio library
+       bulb2 = miio.PhilipsBulb(light2ip, light2token)
+       bulb2.on()
+       bulb2.set_brightness(20)
+       bulb2.set_color_temperature(20)
+
+       response = {"status": "success", "action": "dimmed", "brightness": 20, "color_temp": 20}
+       print("Lights dimmed successfully")
+    except Exception as e:
+       print("RestAPI Lights Dim: ERROR - " + str(e))
+       traceback.print_exc(file=sys.stdout)
+       response= {"status": "error", "message": "There was an error dimming the lights: " + str(e)}
+    return jsonify(response)
+
+
+@app.route('/homeiot/api/v1.0/lightsbrighten', methods = ['GET', 'POST'])
+def lightsbrighten():
+    try:
+       conf = Config()
+       light1token=conf.configOpt["milight_tok1"]
+       light2token=conf.configOpt["milight_tok2"]
+       light1ip=conf.configOpt["milightip1"]
+       light2ip=conf.configOpt["milightip2"]
+
+       print("Lights brighten command received - setting brightness to 100%, color temp to 30%")
+
+       # Control first light using miio library
+       bulb1 = miio.PhilipsBulb(light1ip, light1token)
+       bulb1.set_brightness(100)
+       bulb1.set_color_temperature(30)
+
+       # Control second light using miio library
+       bulb2 = miio.PhilipsBulb(light2ip, light2token)
+       bulb2.set_brightness(100)
+       bulb2.set_color_temperature(30)
+
+       response = {"status": "success", "action": "brightened", "brightness": 100, "color_temp": 30}
+       print("Lights brightened successfully")
+    except Exception as e:
+       print("RestAPI Lights Brighten: ERROR - " + str(e))
+       traceback.print_exc(file=sys.stdout)
+       response= {"status": "error", "message": "There was an error brightening the lights: " + str(e)}
+    return jsonify(response)
+
+
 @app.route("/homeiot/")
 def site_map():
     links = []

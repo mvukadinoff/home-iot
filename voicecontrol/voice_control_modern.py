@@ -513,17 +513,14 @@ class CommandProcessor:
         self._call_api("/homeiot/api/v1.0/lights", {"state": "OFF"})
 
     def _lights_soft(self):
-        """Set lights to soft mode - would need API enhancement"""
+        """Set lights to soft mode"""
         self.audio_player.play_reply("Lights", 1)
-        # This would require API enhancement to support brightness/temperature
-        logger.warning("Soft light mode requires API enhancement")
-        self._call_api("/homeiot/api/v1.0/lights", {"state": "ON"})
+        self._call_api("/homeiot/api/v1.0/lightsdim", method="GET")
 
     def _lights_bright(self):
-        """Set lights to bright mode - would need API enhancement"""
+        """Set lights to bright mode"""
         self.audio_player.play_reply("Lights", 1)
-        logger.warning("Bright light mode requires API enhancement")
-        self._call_api("/homeiot/api/v1.0/lights", {"state": "ON"})
+        self._call_api("/homeiot/api/v1.0/lightsbrighten", method="GET")
 
     def _vacuum_start(self):
         """Start vacuum via API"""
@@ -826,34 +823,63 @@ class WakeWordDetector:
 
         # Download built-in models using openwakeword.utils.download_models()
         if standard_models:
-            try:
-                logger.info(f"📥 Downloading built-in models: {', '.join(standard_models)}")
-                print(f"📥 Downloading built-in models: {', '.join(standard_models)}")
+            # Check which models already exist locally
+            existing_models = []
+            missing_models = []
 
-                # Convert model names to filename format expected by download_models
-                # e.g., 'alexa' -> 'alexa_v0.1'
-                model_filenames = []
-                for model in standard_models:
-                    if model in builtin_models:
-                        model_filenames.append(model)
-                    else:
-                        logger.warning(f"Unknown built-in model: {model} - trying as-is")
-                        model_filenames.append(model)
+            for model in standard_models:
+                # Check if model files exist (OpenWakeWord looks for .tflite or .onnx files)
+                model_exists = False
+                for ext in ['.tflite', '.onnx']:
+                    # Try common naming patterns
+                    for pattern in [f"{model}{ext}", f"{model}_v*{ext}"]:
+                        import glob
+                        matches = glob.glob(os.path.join(models_dir, pattern))
+                        if matches:
+                            model_exists = True
+                            break
+                    if model_exists:
+                        break
 
-                # Download models (this also downloads melspectrogram.tflite and other required files)
-                download_models(model_names=model_filenames, target_directory=models_dir)
+                if model_exists:
+                    existing_models.append(model)
+                    logger.info(f"✓ Model '{model}' already downloaded")
+                else:
+                    missing_models.append(model)
 
-                logger.info(f"✓ Built-in models ready: {', '.join(standard_models)}")
-                print(f"✓ Built-in models ready: {', '.join(standard_models)}")
+            # Try to download missing models
+            if missing_models:
+                try:
+                    logger.info(f"📥 Downloading built-in models: {', '.join(missing_models)}")
+                    print(f"📥 Downloading built-in models: {', '.join(missing_models)}")
 
-                # Use the standard names for built-in models
-                actual_models.extend(standard_models)
+                    # Convert model names to filename format expected by download_models
+                    model_filenames = []
+                    for model in missing_models:
+                        if model in builtin_models:
+                            model_filenames.append(model)
+                        else:
+                            logger.warning(f"Unknown built-in model: {model} - trying as-is")
+                            model_filenames.append(model)
 
-            except Exception as e:
-                logger.error(f"Failed to download built-in models: {e}")
-                print(f"❌ Failed to download built-in models: {e}")
-                # Try to continue anyway - models might already exist
-                actual_models.extend(standard_models)
+                    # Download models (this also downloads melspectrogram.tflite and other required files)
+                    download_models(model_names=model_filenames, target_directory=models_dir)
+
+                    logger.info(f"✓ Downloaded models: {', '.join(missing_models)}")
+                    print(f"✓ Downloaded models: {', '.join(missing_models)}")
+
+                except Exception as e:
+                    logger.warning(f"Download failed: {e}")
+                    print(f"⚠️  Download failed: {e}")
+                    logger.info("Will attempt to use locally cached models if available")
+                    print("⚠️  Attempting to use previously downloaded models...")
+
+            # Add all standard models to actual_models (both existing and attempted downloads)
+            # OpenWakeWord will try to load them, and will fail gracefully if they don't exist
+            actual_models.extend(standard_models)
+
+            if existing_models:
+                print(f"✓ Using cached models: {', '.join(existing_models)}")
 
         # Download custom models from HuggingFace
         if custom_models:
@@ -872,52 +898,95 @@ class WakeWordDetector:
                 repo_id = model_spec
                 model_name = repo_id.split('/')[-1]
 
-                # Query HuggingFace to find actual .tflite or .onnx files in the repo
-                # Prefer .tflite as OpenWakeWord works better with it
                 try:
-                    logger.info(f"🔍 Discovering models in {repo_id}...")
-                    all_files = list_repo_files(repo_id=repo_id)
-                    tflite_files = [f for f in all_files if f.endswith('.tflite') and 'melspectrogram' not in f]
-                    onnx_files = [f for f in all_files if f.endswith('.onnx') and 'melspectrogram' not in f]
+                    # First check if any models from this repo already exist locally
+                    existing_local_models = []
+                    for ext in ['.tflite', '.onnx']:
+                        import glob
+                        # Look for files that might be from this repo
+                        pattern = os.path.join(models_dir, f"*{ext}")
+                        all_local = glob.glob(pattern)
+                        # Filter out melspectrogram files
+                        existing_local_models.extend([f for f in all_local if 'melspectrogram' not in f])
 
-                    # Prefer .tflite over .onnx (better OpenWakeWord support)
-                    model_files = tflite_files if tflite_files else onnx_files
+                    # Query HuggingFace to find actual .tflite or .onnx files in the repo
+                    # Prefer .tflite as OpenWakeWord works better with it
+                    try:
+                        logger.info(f"🔍 Discovering models in {repo_id}...")
+                        all_files = list_repo_files(repo_id=repo_id)
+                        tflite_files = [f for f in all_files if f.endswith('.tflite') and 'melspectrogram' not in f]
+                        onnx_files = [f for f in all_files if f.endswith('.onnx') and 'melspectrogram' not in f]
 
-                    if not model_files:
-                        logger.warning(f"No .tflite or .onnx files found in {repo_id}")
-                        print(f"❌ No wake word models found in {model_name}")
-                        continue
+                        # Prefer .tflite over .onnx (better OpenWakeWord support)
+                        model_files = tflite_files if tflite_files else onnx_files
 
-                    logger.info(f"Found {len(model_files)} model(s): {', '.join(model_files)}")
-
-                    # Download all model files found
-                    for filename in model_files:
-                        local_path = os.path.join(models_dir, filename)
-                        if os.path.exists(local_path):
-                            logger.debug(f"Model already exists: {filename}")
-                            # For custom models, use full path (OpenWakeWord needs it)
-                            actual_models.append(local_path)
+                        if not model_files:
+                            logger.warning(f"No .tflite or .onnx files found in {repo_id}")
+                            print(f"❌ No wake word models found in {model_name}")
+                            # Still check if we have local models from a previous download
+                            if existing_local_models:
+                                logger.info(f"Found {len(existing_local_models)} locally cached model(s), will try to use them")
+                                actual_models.extend(existing_local_models)
                             continue
 
-                        logger.info(f"📥 Downloading {filename}...")
-                        print(f"📥 Downloading: {filename}")
+                        logger.info(f"Found {len(model_files)} model(s): {', '.join(model_files)}")
 
-                        downloaded_path = hf_hub_download(
-                            repo_id=repo_id,
-                            filename=filename,
-                            cache_dir=None
-                        )
+                        # Download all model files found
+                        for filename in model_files:
+                            local_path = os.path.join(models_dir, filename)
+                            if os.path.exists(local_path):
+                                logger.info(f"✓ Model already cached: {filename}")
+                                print(f"✓ Using cached model: {filename}")
+                                # For custom models, use full path (OpenWakeWord needs it)
+                                actual_models.append(local_path)
+                                continue
 
-                        shutil.copy(downloaded_path, local_path)
-                        logger.info(f"✓ Installed: {filename}")
-                        print(f"✓ Model ready: {filename}")
+                            try:
+                                logger.info(f"📥 Downloading {filename}...")
+                                print(f"📥 Downloading: {filename}")
 
-                        # For custom models, use full path (OpenWakeWord needs it)
-                        actual_models.append(local_path)
+                                downloaded_path = hf_hub_download(
+                                    repo_id=repo_id,
+                                    filename=filename,
+                                    cache_dir=None
+                                )
+
+                                shutil.copy(downloaded_path, local_path)
+                                logger.info(f"✓ Installed: {filename}")
+                                print(f"✓ Model ready: {filename}")
+
+                                # For custom models, use full path (OpenWakeWord needs it)
+                                actual_models.append(local_path)
+
+                            except Exception as download_error:
+                                logger.warning(f"Failed to download {filename}: {download_error}")
+                                print(f"⚠️  Download failed for {filename}: {download_error}")
+
+                                # Check if this file might exist from a previous download
+                                if os.path.exists(local_path):
+                                    logger.info(f"Found previously downloaded model: {filename}")
+                                    print(f"✓ Using previously downloaded: {filename}")
+                                    actual_models.append(local_path)
+                                else:
+                                    logger.warning(f"Model {filename} not available locally or remotely")
+
+                    except Exception as list_error:
+                        logger.warning(f"Failed to list files in {repo_id}: {list_error}")
+                        print(f"⚠️  Cannot connect to HuggingFace for {model_name}: {list_error}")
+
+                        # Fall back to checking for locally cached models
+                        if existing_local_models:
+                            logger.info(f"Using {len(existing_local_models)} locally cached model(s)")
+                            print(f"✓ Using {len(existing_local_models)} previously downloaded model(s)")
+                            actual_models.extend(existing_local_models)
+                        else:
+                            logger.warning(f"No locally cached models found for {model_name}")
+                            print(f"⚠️  No cached models available for {model_name}")
 
                 except Exception as e:
-                    logger.error(f"Failed to process {repo_id}: {e}")
-                    print(f"❌ Failed to download {model_name}: {e}")
+                    logger.error(f"Error processing {repo_id}: {e}")
+                    print(f"⚠️  Error with {model_name}: {e}")
+                    logger.info("Will continue with other models if available")
 
         return actual_models
 
