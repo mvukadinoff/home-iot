@@ -1,6 +1,6 @@
 Flask
 websocket-client==0.37.0
-requests==2.20.0
+requests==2.32.4
 configparser
 Flask-Sockets
 paho-mqtt==1.3.1
