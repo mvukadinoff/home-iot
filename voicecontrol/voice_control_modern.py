@@ -65,7 +65,7 @@ class VoiceControlConfig:
         else:
             logger.warning(f"Config file not found at {self.config_path}, using defaults")
             return {
-                "listen_address": "localhost",
+                "api_server_address": "localhost",
                 "listen_port": "5000",
                 "mqtt_broker": "localhost",
                 "google_api_key": "",
@@ -427,7 +427,7 @@ class CommandProcessor:
     def __init__(self, config: VoiceControlConfig, audio_player: AudioPlayer):
         self.config = config
         self.audio_player = audio_player
-        self.api_base_url = f"http://{config.get('listen_address')}:{config.get('listen_port')}"
+        self.api_base_url = f"http://{config.get('api_server_address')}:{config.get('listen_port')}"
 
         # MQTT setup
         self.mqtt_client = mqtt.Client()
@@ -1360,7 +1360,7 @@ class VoiceControlSystem:
     def run(self):
         """Start the voice control system"""
         logger.info("Starting Voice Control System...")
-        logger.info(f"API Server: {self.config.get('listen_address')}:{self.config.get('listen_port')}")
+        logger.info(f"API Server: {self.config.get('api_server_address')}:{self.config.get('listen_port')}")
         logger.info(f"MQTT Broker: {self.config.get('mqtt_broker')}")
 
         try:
