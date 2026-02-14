@@ -1,0 +1,28 @@
+# Modern Voice Control System Requirements
+
+# Core dependencies
+setuptools>=65.0.0
+numpy>=1.24.0,<2.0  # Must be <2.0 for tflite-runtime compatibility
+
+# Wake Word Detection (OPTIONAL - no API key required!)
+# If these fail to install (e.g., Python 3.13+), the system will use
+# simple volume-based wake detection (2 claps/loud sounds)
+openwakeword>=0.6.0
+onnxruntime>=1.16.0
+huggingface_hub>=0.20.0
+
+# Audio Processing , we need apt-get install -y portaudio19-dev flac mpg123
+pyaudio>=0.2.13
+
+# Optional: Voice Activity Detection (may have compatibility issues with Python 3.13+)
+# If webrtcvad fails to install, the system will use volume-based VAD fallback
+# webrtcvad>=2.0.10
+
+# Google Speech-to-Text (REST API - uses API key from config)
+# No SDK needed, just HTTP requests
+
+# MQTT for device control
+paho-mqtt>=1.6.1
+
+# HTTP requests for API calls
+requests>=2.31.0
