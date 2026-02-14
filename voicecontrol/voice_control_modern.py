@@ -2,6 +2,8 @@
 """
 Modern Voice Control System for Home IoT
 Uses modern libraries for wake word detection, voice activity detection, and speech recognition.
+To set playback device for answers
+export SDL_AUDIODRIVER=alsa ; export AUDIODEV=plughw:1,0
 """
 
 import os
