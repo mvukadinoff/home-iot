@@ -124,25 +124,29 @@ def lights():
        light2token=conf.configOpt["milight_tok2"]
        light1ip=conf.configOpt["milightip1"]
        light2ip=conf.configOpt["milightip2"]
+
+       print("Lights command received: {lstate}".format(lstate=lstate))
+
+       # Control first light using miio library
+       bulb1 = miio.PhilipsBulb(light1ip, light1token)
        if lstate == "ON":
-           state="on"
+           bulb1.on()
        else:
-           state="off"
-       print("Lights command received: {lstate} {state} ".format(lstate=lstate,state=state))
-       #bashCommand = "miceil --ip {lightip}  --token {lighttoken} {state}".format(lightip=light1ip,lighttoken=light1token,state=state)
-       bashCommand = "miiocli philipsbulb --ip {lightip}  --token {lighttoken} {state}".format(lightip=light1ip,lighttoken=light1token,state=state)
-       lcmd = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-       output, error = lcmd.communicate()
-       response = str(output) + " " + str(error)
-       #bashCommand = "miceil --ip {lightip}  --token {lighttoken} {state}".format(lightip=light2ip,lighttoken=light2token,state=state)
-       bashCommand = "miiocli philipsbulb --ip {lightip}  --token {lighttoken} {state}".format(lightip=light2ip,lighttoken=light2token,state=state)
-       lcmd = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-       output, error = lcmd.communicate()
-       response = response + " " + str(output) + " " + str(error)
+           bulb1.off()
+
+       # Control second light using miio library
+       bulb2 = miio.PhilipsBulb(light2ip, light2token)
+       if lstate == "ON":
+           bulb2.on()
+       else:
+           bulb2.off()
+
+       response = {"status": "success", "action": lstate.lower()}
+       print("Lights controlled successfully")
     except Exception as e:
        print("RestAPI Lights: ERROR command param not supplied, please specify either ON or OFF in the state post variable or there was an error controlling the lights " + str(e))
        traceback.print_exc(file=sys.stdout)
-       response= "There was an error controlling the lights" + str(e)
+       response= {"status": "error", "message": "There was an error controlling the lights: " + str(e)}
     return jsonify(response)
 
 
